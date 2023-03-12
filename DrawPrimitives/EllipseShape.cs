@@ -10,6 +10,8 @@ namespace DrawPrimitives
     {
         public EllipseShape() : base() { }
 
+        public EllipseShape(Shape ob) : base(ob) { }
+
         public EllipseShape(Rectangle bounds) : base()
         {
             Bounds = bounds;

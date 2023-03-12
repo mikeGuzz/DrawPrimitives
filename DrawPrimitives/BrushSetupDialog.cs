@@ -46,7 +46,7 @@ namespace DrawPrimitives
         {
             foreach(var ob in Enum.GetNames(typeof(HatchStyle)))
             {
-                hatchStyle_comboBox.Items.Add(ob);
+                var item = hatchStyle_comboBox.Items.Add(ob);
             }
         }
 

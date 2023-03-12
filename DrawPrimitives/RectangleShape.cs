@@ -13,6 +13,8 @@ namespace DrawPrimitives
     {
         public RectangleShape() : base() { }
 
+        public RectangleShape(Shape ob) : base(ob) { }
+
         public RectangleShape(Rectangle bounds) : base()
         {
             Bounds = bounds;
@@ -43,6 +45,7 @@ namespace DrawPrimitives
         {
             if (Brush != null)
                 g.FillRectangle(Brush, GetNormalizedBounds());
+            var n = (Shape)this;
         }
     }
 }

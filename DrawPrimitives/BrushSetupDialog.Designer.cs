@@ -290,7 +290,7 @@
             this.Controls.Add(this.label7);
             this.Controls.Add(this.hatch_groupBox);
             this.Controls.Add(this.groupBox1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "BrushSetupDialog";
