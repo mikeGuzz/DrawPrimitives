@@ -10,13 +10,15 @@ using System.Security.Policy;
 namespace DrawPrimitives
 {
     public enum ShapeType { Line, Rectangle, Ellipse, TextBox };
+    public enum ShapeSelectionState { None, Highlight, Bounds, Anchors, BoundsAndAnchors };
 
     public abstract class Shape : IDisposable, ICloneable
     {
         public Rectangle Bounds;
+        public Rectangle DefaultBounds;
         public Pen? Pen { get; set; }
         public Brush? Brush { get; set; }
-        public object? Tag { get; set; }
+        public ShapeSelectionState SelectionState { get; set; } = ShapeSelectionState.None;
 
         protected List<ShapeAnchor> anchors = new List<ShapeAnchor>();
 
@@ -24,10 +26,10 @@ namespace DrawPrimitives
         public Shape(Shape ob)
         {
             Bounds = ob.Bounds;
+            DefaultBounds = ob.DefaultBounds;
             Pen = ob.Pen;
             Brush = ob.Brush;
-            Tag = ob.Tag;
-            anchors.AddRange(ob.anchors);
+            SelectionState = ob.SelectionState;
         }
 
         public abstract void DrawStroke(Graphics g);
@@ -35,13 +37,32 @@ namespace DrawPrimitives
 
         public void DrawBounds(Graphics g, Pen pen, Brush? brush)
         {
-            var rBounds = GetNormalizedBounds();
-            g.DrawRectangle(pen, rBounds);
-            if (brush != null)
-                g.FillRectangle(brush, rBounds);
+            var bounds = GetWithotNegative();
+            switch (SelectionState)
+            {
+                case ShapeSelectionState.Highlight:
+                    if(brush != null)
+                        g.FillRectangle(brush, bounds);
+                    g.DrawRectangle(new Pen(Color.FromArgb(100, pen.Color), pen.Width), bounds);
+                    break;
+                case ShapeSelectionState.Bounds:
+                    if (brush != null)
+                        g.FillRectangle(brush, bounds);
+                    g.DrawRectangle(pen, bounds);
+                    break;
+                case ShapeSelectionState.Anchors:
+                    DrawAnchors(g);
+                    break;
+                case ShapeSelectionState.BoundsAndAnchors:
+                    if (brush != null)
+                        g.FillRectangle(brush, bounds);
+                    g.DrawRectangle(pen, bounds);
+                    DrawAnchors(g);
+                    break;
+            }
         }
 
-        public void DrawAnchors(Graphics g, bool fill = false)
+        public void DrawAnchors(Graphics g)
         {
             foreach (var ob in anchors)
             {
@@ -53,12 +74,12 @@ namespace DrawPrimitives
                 switch (ob.Shape)
                 {
                     case AnchorShape.Rectangle:
-                        if (fill && ob.Brush != null)
+                        if (ob.Brush != null)
                             g.FillRectangle(ob.Brush, b);
                         g.DrawRectangle(ob.Pen, b);
                         break;
                     case AnchorShape.Round:
-                        if (fill && ob.Brush != null)
+                        if (ob.Brush != null)
                             g.FillEllipse(ob.Brush, b);
                         g.DrawEllipse(ob.Pen, b);
                         break;
@@ -69,7 +90,7 @@ namespace DrawPrimitives
                         new Point(b.X + b.Width, b.Y + b.Height),
                         new Point(b.X, b.Y + b.Height),
                         };
-                        if (fill && ob.Brush != null)
+                        if (ob.Brush != null)
                             g.FillPolygon(ob.Brush, points);
                         g.DrawPolygon(ob.Pen, points);
                         break;
@@ -141,39 +162,20 @@ namespace DrawPrimitives
             }
         }
 
-        public Rectangle GetRealBounds()
+        public Rectangle GetWithotNegative()
         {
-            if (Pen == null)
-                return Bounds;
-            else if (Pen.Alignment == PenAlignment.Inset)
-                return Bounds;
-            else
-            {
-                int penWidth = (int)Pen.Width;
-                return new Rectangle(Bounds.X - penWidth / 2, Bounds.Y - penWidth / 2, Bounds.Width + penWidth, Bounds.Height + penWidth);
-            }
+            return Bounds.WithoutNegative();
         }
 
-        public Rectangle GetNormalizedBounds()
+        public void MakeWithoutNegative()
         {
-            return Bounds.Normalized();
-        }
-
-        public void NormalizeBounds()
-        {
-            Bounds = Bounds.Normalized();
+            Bounds = Bounds.WithoutNegative();
         }
 
         public void Dispose()
         {
-            if(Pen != null)
-            {
-                Pen.Dispose();
-            }
-            if(Brush != null)
-            {
-                Brush.Dispose();
-            }
+            Pen?.Dispose();
+            Brush?.Dispose();
         }
 
         public object Clone()

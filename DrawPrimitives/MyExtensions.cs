@@ -14,7 +14,7 @@ namespace DrawPrimitives
         [DllImport("msvcrt.dll")]
         private static extern int memcmp(IntPtr b1, IntPtr b2, long count);
 
-        public static Rectangle Normalized(this Rectangle r)
+        public static Rectangle WithoutNegative(this Rectangle r)
         {
             if (r.Width >= 0 && r.Height >= 0)
                 return r;

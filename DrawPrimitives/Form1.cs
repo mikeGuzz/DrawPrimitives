@@ -15,28 +15,6 @@ namespace DrawPrimitives
         private string fileName = "Untitled";
         private string fileFullName = string.Empty;
 
-        private bool IsSaved()
-        {
-            if (!File.Exists(fileFullName))
-            {
-                return !shapes.Any();
-            }
-            var b = GetBitmap(false);
-            var res = new Bitmap(fileFullName).CompareMemCmp(b);
-            return res;
-            //else
-            //{
-                try
-                {
-                    
-                }
-                catch
-                {
-                    return false;
-                }
-            //}
-        }
-
         //pens
         private Pen mainPen;
         private readonly Pen selectedPen;
@@ -48,13 +26,11 @@ namespace DrawPrimitives
         private readonly SolidBrush anchorBrush;
         private readonly SolidBrush selectedBoundsBrush;
 
-        //select variables
-        private Point startSelectionPoint;
-        private Rectangle selectedBounds;
-        private List<Shape> selectedItems = new List<Shape>();
+        //select
+        private Rectangle selectedBounds; 
+        private readonly ShapeAnchor[] anchors;
 
         //transform
-        private List<Rectangle> transformBuffer = new List<Rectangle>();
         private TransformState transformState = TransformState.None;
         private AnchorPosition selectedAnchorPos = AnchorPosition.None;
         private readonly Size minimumSize = new Size(9, 9);
@@ -64,7 +40,6 @@ namespace DrawPrimitives
 
         //shapes
         private List<Shape> shapes = new List<Shape>();
-        private readonly ShapeAnchor[] anchors;
 
         //menu strip
         private ShapeType selectedShapeType = ShapeType.Ellipse;
@@ -103,6 +78,8 @@ namespace DrawPrimitives
                     new ShapeAnchor(size, AnchorPosition.RightTop, anchorPen, anchorBrush, AnchorShape.Rectangle),
                     new ShapeAnchor(size, AnchorPosition.RightBottom, anchorPen, anchorBrush, AnchorShape.Rectangle),
             };
+
+            this.Text = GetTitle();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -146,31 +123,49 @@ namespace DrawPrimitives
             {
                 ob.DrawFill(g);
                 ob.DrawStroke(g);
-                if (ob.Tag != null && (bool)ob.Tag)
-                    ob.DrawBounds(g, selectedPen, null);
-            }
-
-            if(mouseDown && selectedToolType == ToolType.DrawShape && transformState == TransformState.None)
-            {
-                var ob = selectedItems.Single();
-                ob.DrawFill(g);
-                ob.DrawStroke(g);
                 ob.DrawBounds(g, selectedPen, null);
             }
-            else
-            {
-                foreach (var ob in selectedItems)
-                {
-                    ob.DrawBounds(g, selectedPen, null);
-                    ob.DrawAnchors(g, true);
-                }
-            }
+
+            //if(mouseDown && selectedToolType == ToolType.DrawShape && transformState == TransformState.None)
+            //{
+            //    var ob = selectedItems.Single();
+            //    ob.DrawFill(g);
+            //    ob.DrawStroke(g);
+            //    ob.DrawBounds(g, selectedPen, null);
+            //}
+            //else
+            //{
+            //    foreach (var ob in selectedItems)
+            //    {
+            //        ob.DrawBounds(g, selectedPen, null);
+            //        ob.DrawAnchors(g, true);
+            //    }
+            //}
 
             if(mouseDown && (Math.Abs(selectedBounds.Width) > 1 || Math.Abs(selectedBounds.Height) > 1) && selectedToolType == ToolType.Pointer && transformState == TransformState.None)
             {
-                g.FillRectangle(selectedBoundsBrush, selectedBounds.Normalized());
-                g.DrawRectangle(selectedBoundsPen, selectedBounds.Normalized());
+                g.FillRectangle(selectedBoundsBrush, selectedBounds.WithoutNegative());
+                g.DrawRectangle(selectedBoundsPen, selectedBounds.WithoutNegative());
             }
+        }
+
+        private void ResetSelection()
+        {
+            shapes.ForEach(i => i.SelectionState = ShapeSelectionState.None);
+        }
+
+        private IEnumerable<Shape> GetSelectedItems()
+        {
+            return shapes.Where(i => i.SelectionState.HasFlag(ShapeSelectionState.BoundsAndAnchors));
+        }
+
+        private void SetSelectedItemsDefaultBounds()
+        {
+            shapes.ForEach(i =>
+            {
+                if (i.SelectionState.HasFlag(ShapeSelectionState.BoundsAndAnchors))
+                    i.DefaultBounds = i.Bounds;
+            });
         }
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
@@ -178,41 +173,38 @@ namespace DrawPrimitives
             if(e.Button != MouseButtons.Left)
                 return;
             mouseDown = true;
-            startSelectionPoint = e.Location;
             selectedBounds.Location = e.Location;
             selectedBounds.Size = Size.Empty;
             var controlKeyState = ModifierKeys.HasFlag(Keys.Control);
 
             if (!(controlKeyState && selectedToolType == ToolType.Pointer))
             {
-                foreach (var shape in selectedItems)
+                var coll = GetSelectedItems();
+                foreach (var shape in coll)
                 {
                     foreach (var anchor in shape.GetAnchors())
                     {
-                        //check anchors
                         var anchorBounds = shape.GetAnchorBounds(anchor.Position);
                         if (e.Location.X >= anchorBounds.X && e.Location.Y >= anchorBounds.Y &&
                             e.Location.X <= (anchorBounds.X + anchorBounds.Width) && e.Location.Y <= (anchorBounds.Y + anchorBounds.Height))
                         {
                             transformState = TransformState.Scale;
                             selectedAnchorPos = anchor.Position;
-                            transformBuffer.Clear();
-                            transformBuffer.AddRange(selectedItems.Select(i => i.Bounds));
+                            SetSelectedItemsDefaultBounds();
                             return;
                         }
                     }
                 }
                 //check bounds
-                for (int i = selectedItems.Count - 1; i >= 0; i--)
+                
+                foreach(var ob in coll.Reverse())
                 {
-                    
-                    var rBounds = selectedItems[i].GetNormalizedBounds();
+                    var rBounds = ob.GetWithotNegative();
                     if (e.Location.X >= rBounds.X && e.Location.Y >= rBounds.Y &&
                             e.Location.X <= (rBounds.X + rBounds.Width) && e.Location.Y <= (rBounds.Y + rBounds.Height))
                     {
                         transformState = TransformState.Move;
-                        transformBuffer.Clear();
-                        transformBuffer.AddRange(selectedItems.Select(i => i.Bounds));
+                        SetSelectedItemsDefaultBounds();
                         return;
                     }
                 }
@@ -222,47 +214,44 @@ namespace DrawPrimitives
             switch (selectedToolType)
             {
                 case ToolType.DrawShape:
-                    selectedItems.Clear();
-                    Shape tempShape;
+                    ResetSelection();
+                    Shape shape;
                     switch (selectedShapeType)
                     {
                         case ShapeType.Line:
-                            tempShape = new LineShape(new Rectangle(e.Location, Size.Empty), drawOutlineToolStripMenuItem.Checked ? mainPen : null, drawFillToolStripMenuItem.Checked ? mainBrush : null);
+                            shape = new LineShape(new Rectangle(e.Location, Size.Empty), drawOutlineToolStripMenuItem.Checked ? mainPen : null, drawFillToolStripMenuItem.Checked ? mainBrush : null);
                             break;
                         case ShapeType.Rectangle:
-                            tempShape = new RectangleShape(new Rectangle(e.Location, Size.Empty), drawOutlineToolStripMenuItem.Checked ? mainPen : null, drawFillToolStripMenuItem.Checked ? mainBrush : null);
+                            shape = new RectangleShape(new Rectangle(e.Location, Size.Empty), drawOutlineToolStripMenuItem.Checked ? mainPen : null, drawFillToolStripMenuItem.Checked ? mainBrush : null);
                             break;
                         case ShapeType.Ellipse:
-                            tempShape = new EllipseShape(new Rectangle(e.Location, Size.Empty), drawOutlineToolStripMenuItem.Checked ? mainPen : null, drawFillToolStripMenuItem.Checked ? mainBrush : null);
+                            shape = new EllipseShape(new Rectangle(e.Location, Size.Empty), drawOutlineToolStripMenuItem.Checked ? mainPen : null, drawFillToolStripMenuItem.Checked ? mainBrush : null);
                             break;
                         default:
                             return;
                     }
-                    tempShape.AddAnchors(anchors);
-                    selectedItems.Add(tempShape);
+                    shape.AddAnchors(anchors);
+                    shape.SelectionState = ShapeSelectionState.Bounds;
+                    shapes.Add(shape);
                     break;
                 case ToolType.Pointer:
                     if (!controlKeyState)
-                        selectedItems.Clear();
-                    for (int i = shapes.Count - 1; i >= 0; i--)
+                        ResetSelection();
+                    foreach(var ob in shapes.Reverse<Shape>())
                     {
                         var p = e.Location;
-                        if (p.X > shapes[i].Bounds.X && p.Y > shapes[i].Bounds.Y && p.X < (shapes[i].Bounds.X + shapes[i].Bounds.Width) && p.Y < (shapes[i].Bounds.Y + shapes[i].Bounds.Height))
+                        if (p.X > ob.Bounds.X && p.Y > ob.Bounds.Y && p.X < (ob.Bounds.X + ob.Bounds.Width) && p.Y < (ob.Bounds.Y + ob.Bounds.Height))
                         {
                             if (controlKeyState)
                             {
-                                if(selectedItems.Contains(shapes[i]))
-                                    selectedItems.Remove(shapes[i]);
-                                else
-                                    selectedItems.Add(shapes[i]);
+                                ob.SelectionState = ob.SelectionState.HasFlag(ShapeSelectionState.BoundsAndAnchors) ? ShapeSelectionState.None : ShapeSelectionState.BoundsAndAnchors;
                             }
                             else
                             {
                                 transformState = TransformState.Move;
-                                selectedItems.Add(shapes[i]);
+                                ob.SelectionState = ShapeSelectionState.BoundsAndAnchors;
                             }
-                            transformBuffer.Clear();
-                            transformBuffer.AddRange(selectedItems.Select(i => i.Bounds));
+                            SetSelectedItemsDefaultBounds();
                             break;
                         }
                     }
@@ -276,9 +265,10 @@ namespace DrawPrimitives
             if (!mouseDown)
                 return;
 
-            selectedBounds.Size = new Size(e.X - startSelectionPoint.X, e.Y - startSelectionPoint.Y);
+            selectedBounds.Size = new Size(e.X - selectedBounds.X, e.Y - selectedBounds.Y);
 
-            if (transformState != TransformState.None)//transform logic
+            //transform logic
+            if (transformState != TransformState.None)
             {
                 switch (transformState)
                 {
@@ -316,28 +306,28 @@ namespace DrawPrimitives
                                 increase.Size = new Size(0, selectedBounds.Height);
                                 break;
                         }
-                        for (int i = 0; i < transformBuffer.Count; i++)
+                        foreach (var ob in GetSelectedItems())
                         {
-                            var tempBounds = new Rectangle(new Point(increase.Location.X + transformBuffer[i].Location.X, increase.Location.Y + transformBuffer[i].Location.Y), increase.Size + transformBuffer[i].Size);
+                            var tempBounds = new Rectangle(new Point(increase.Location.X + ob.DefaultBounds.Location.X, increase.Location.Y + ob.DefaultBounds.Location.Y), increase.Size + ob.DefaultBounds.Size);
 
                             if (minimumSize.Width > tempBounds.Width)
                                 tempBounds.Width = minimumSize.Width;
                             if (minimumSize.Height > tempBounds.Height)
                                 tempBounds.Height = minimumSize.Height;
-                            var minX = (transformBuffer[i].X + transformBuffer[i].Width - minimumSize.Width);
-                            var minY = (transformBuffer[i].Y + transformBuffer[i].Height - minimumSize.Height);
+                            var minX = (ob.DefaultBounds.X + ob.DefaultBounds.Width - minimumSize.Width);
+                            var minY = (ob.DefaultBounds.Y + ob.DefaultBounds.Height - minimumSize.Height);
                             if (minX < tempBounds.X)
                                 tempBounds.X = minX;
                             if (minY < tempBounds.Y)
                                 tempBounds.Y = minY;
 
-                            selectedItems[i].Bounds = tempBounds;
+                            ob.Bounds = tempBounds;
                         }
                         break;
                     case TransformState.Move:
-                        for (int i = 0; i < selectedItems.Count; i++)
+                        foreach(var ob in GetSelectedItems())
                         {
-                            selectedItems[i].Bounds.Location = new Point(transformBuffer[i].X + selectedBounds.Width, transformBuffer[i].Y + selectedBounds.Height);
+                            ob.Bounds.Location = new Point(ob.DefaultBounds.X + selectedBounds.Width, ob.DefaultBounds.Y + selectedBounds.Height);
                         }
                         break;
                 }
@@ -348,22 +338,22 @@ namespace DrawPrimitives
             switch (selectedToolType)
             {
                 case ToolType.DrawShape:
-                    selectedItems.Single().Bounds.Size = selectedBounds.Size;
+                    shapes.Last().Bounds = selectedBounds.WithoutNegative();
                     break;
                 case ToolType.Pointer:
-                    var normalized = selectedBounds.Normalized();
+                    var normalized = selectedBounds.WithoutNegative();
                     if (normalized.Width > 1 || normalized.Height > 1)
                     {
-                        if (selectedItems.Any())
-                            selectedItems.Clear();
+                        var selectedColl = GetSelectedItems();
+                        if (!selectedColl.Any())
+                            ResetSelection();
                         foreach (var ob in shapes)
                         {
                             var r = ob.Bounds;
-
                             if (r.X > normalized.X && r.Y > normalized.Y && (r.X + r.Width) < (normalized.X + normalized.Width) && (r.Y + r.Height) < (normalized.Y + normalized.Height))
-                                ob.Tag = true;
+                                ob.SelectionState = ShapeSelectionState.Bounds;
                             else
-                                ob.Tag = false;
+                                ob.SelectionState = ShapeSelectionState.None;
                         }
                     }
                     break;
@@ -385,30 +375,41 @@ namespace DrawPrimitives
             switch (selectedToolType)
             {
                 case ToolType.DrawShape:
-                    if (Math.Abs(selectedBounds.Width) > minimumSize.Width && Math.Abs(selectedBounds.Height) > minimumSize.Height)
-                    {
-                        var item = selectedItems.Single();
-                        item.NormalizeBounds();
-                        shapes.Add(item);
-                    }
+                    if (!(Math.Abs(selectedBounds.Width) > minimumSize.Width && Math.Abs(selectedBounds.Height) > minimumSize.Height))
+                        shapes.RemoveAt(shapes.Count - 1);
                     else
-                        selectedItems.Clear();
+                        shapes.Last().SelectionState = ShapeSelectionState.BoundsAndAnchors;
                     break;
                 case ToolType.Pointer:
-                    var normalized = selectedBounds.Normalized();
-                    if (normalized.Width > 1 || normalized.Height > 1)
+                    var normalized = selectedBounds.WithoutNegative();
+                    var validArea = (normalized.Width > 1 || normalized.Height > 1);
+                    shapes.ForEach(i =>
                     {
-                        selectedItems.AddRange(shapes.Where(i =>
-                        {
-                            var value = i.Tag != null && (bool)i.Tag;
-                            i.Tag = false;
-                            return value;
-                        }).Select(i => i));
-                    }
+                        if (i.SelectionState.HasFlag(ShapeSelectionState.Bounds))
+                            i.SelectionState = validArea ? ShapeSelectionState.BoundsAndAnchors : ShapeSelectionState.None;
+                    });
                     break;
             }
             pictureBox1.Invalidate();
-            this.Text = IsSaved().ToString();
+        }
+
+        private bool IsSaved()
+        {
+            if (!File.Exists(fileFullName))
+            {
+                return !shapes.Any();
+            }
+            else
+            {
+                try
+                {
+                    return new Bitmap(fileFullName).CompareMemCmp(GetBitmap(false));
+                }
+                catch
+                {
+                    return false;
+                }
+            }
         }
 
         private void ShapeMenuItemClick(object? sender, EventArgs e)
@@ -439,14 +440,11 @@ namespace DrawPrimitives
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 mainPen = dialog.GetValue();
-                if(selectedItems.Count > 0)
+                foreach (var ob in GetSelectedItems())
                 {
-                    foreach (var ob in selectedItems)
-                    {
-                        ob.Pen = mainPen;
-                    }
-                    pictureBox1.Invalidate();
+                    ob.Pen = mainPen;
                 }
+                pictureBox1.Invalidate();
             }
         }
 
@@ -456,37 +454,29 @@ namespace DrawPrimitives
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 mainBrush = dialog.GetValue();
-                if (selectedItems.Count > 0)
+                foreach (var ob in GetSelectedItems())
                 {
-                    foreach (var ob in selectedItems)
-                    {
-                        ob.Brush = mainBrush;
-                    }
-                    pictureBox1.Invalidate();
+                    ob.Brush = mainBrush;
                 }
+                pictureBox1.Invalidate();
             }
         }
 
         private void RemoveItems()
         {
-            if (!selectedItems.Any())
-                return;
-            for (int i = selectedItems.Count - 1; i >= 0; i--)
+            foreach(var ob in GetSelectedItems().Reverse())
             {
-                if (shapes.Contains(selectedItems[i]))
-                {
-                    shapes.Remove(selectedItems[i]);
-                }
+                shapes.Remove(ob);
             }
-            selectedItems.Clear();
         }
 
         private void CutItems()
         {
-            if (!selectedItems.Any())
+            var coll = GetSelectedItems();
+            if (!coll.Any())
                 return;
             buffer.Clear();
-            buffer.AddRange(selectedItems.Select(i => (Shape)i.Clone()));
+            buffer.AddRange(coll.Select(i => (Shape)i.Clone()));
             RemoveItems();
             pictureBox1.Invalidate();
         }
@@ -495,56 +485,63 @@ namespace DrawPrimitives
         {
             if (!buffer.Any())
                 return;
-            selectedItems.Clear();
-            var coll = buffer.Select(i =>
+            ResetSelection();
+            shapes.AddRange(buffer.Select(i =>
             {
                 i = (Shape)i.Clone();
-                i.Bounds.X += 15;
-                i.Bounds.Y += 15;
+                if (MousePosition.X > pictureBox1.Location.X && MousePosition.Y > pictureBox1.Location.Y && MousePosition.X < (pictureBox1.Location.X + pictureBox1.Width) && MousePosition.Y < (pictureBox1.Location.Y + pictureBox1.Height))
+                {
+                    i.Bounds.Location = new Point(MousePosition.X + 15, MousePosition.Y + 15);
+                }
+                else
+                {
+                    i.Bounds.X += 15;
+                    i.Bounds.Y += 15;
+                }
+                i.SelectionState = ShapeSelectionState.BoundsAndAnchors;
                 return i;
-            });
-            int index = shapes.Count;
-            shapes.AddRange(coll);
-            selectedItems.AddRange(shapes.Skip(index));
+            }));
             pictureBox1.Invalidate();
         }
 
         private void CopyItems()
         {
-            if (!selectedItems.Any())
+            var coll = GetSelectedItems();
+            if (!coll.Any())
                 return;
             buffer.Clear();
-            buffer.AddRange(selectedItems.Select(i => (Shape)i.Clone()));
+            buffer.AddRange(coll.Select(i => (Shape)i.Clone()));
             pictureBox1.Invalidate();
         }
 
         private void BringToFrontItems()
         {
-            foreach(var ob in selectedItems)
-            {
-                int index = shapes.IndexOf(ob);
-                int lastIndex = shapes.Count - 1;
-                if (index != -1 && index < lastIndex)
-                {
-                    shapes.RemoveAt(index);
-                    shapes.Insert(index + 1, ob);
-                }
-            }
-            pictureBox1.Invalidate();
+            //foreach(var ob in GetSelectedItems())
+            //{
+            //    int index = shapes.IndexOf(ob);
+            //    int lastIndex = shapes.Count - 1;
+            //    if (index != -1 && index < lastIndex)
+            //    {
+            //        shapes
+            //        shapes.RemoveAt(index);
+            //        shapes.Insert(index + 1, ob);
+            //    }
+            //}
+            //pictureBox1.Invalidate();
         }
 
         private void SendToBackItems()
         {
-            foreach (var ob in selectedItems)
-            {
-                int index = shapes.IndexOf(ob);
-                if (index != -1 && index > 0)
-                {
-                    shapes.RemoveAt(index);
-                    shapes.Insert(index - 1, ob);
-                }
-            }
-            pictureBox1.Invalidate();
+            //foreach (var ob in selectedItems)
+            //{
+            //    int index = shapes.IndexOf(ob);
+            //    if (index != -1 && index > 0)
+            //    {
+            //        shapes.RemoveAt(index);
+            //        shapes.Insert(index - 1, ob);
+            //    }
+            //}
+            //pictureBox1.Invalidate();
         }
 
         private void cutToolStripMenuItem1_Click(object sender, EventArgs e)
@@ -570,21 +567,21 @@ namespace DrawPrimitives
 
         private void selectAllToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            selectedItems.Clear();
-            selectedItems.AddRange(shapes.Select(i => i));
+            shapes.ForEach(i => i.SelectionState = ShapeSelectionState.BoundsAndAnchors);
             pictureBox1.Invalidate();
         }
 
         private void resetSelectionToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            selectedItems.Clear();
+            shapes.ForEach(i => i.SelectionState = ShapeSelectionState.None);
             pictureBox1.Invalidate();
         }
 
         private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            bool oneOrMoreSelected = selectedItems.Count >= 1;
-            propertiesToolStripMenuItem.Enabled = selectedItems.Count == 1;
+            var count = GetSelectedItems().Count();
+            bool oneOrMoreSelected = count >= 1;
+            propertiesToolStripMenuItem.Enabled = count == 1;
             cutToolStripMenuItem.Enabled = oneOrMoreSelected;
             copyToolStripMenuItem.Enabled = oneOrMoreSelected;
             pasteToolStripMenuItem.Enabled = buffer.Any();
@@ -595,18 +592,20 @@ namespace DrawPrimitives
 
         private void propertiesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (selectedItems.Count != 1)
+            var coll = GetSelectedItems();
+            if (coll.Count() != 1)
                 return;
-            var dialog = new SetupShapePropertiesDialog("Shape setting", selectedItems.Single());
+            var dialog = new SetupShapePropertiesDialog("Shape setting", coll.Single());
             if(dialog.ShowDialog() == DialogResult.OK)
             {
-                var index = shapes.IndexOf(selectedItems.Single());
-                if (index == -1)
-                    return;
-                shapes[index] = dialog.GetValue();
-                selectedItems.Clear();
-                selectedItems.Add(shapes[index]);
-                pictureBox1.Invalidate();
+                //coll.Single().;
+                //var index = shapes.IndexOf(coll.Single());
+                //if (index == -1)
+                //    return;
+                //var selectState = shapes[index].SelectionState;
+                //shapes[index] = dialog.GetValue();
+                //shapes[index].SelectionState = selectState;
+                //pictureBox1.Invalidate();
             }
         }
 
@@ -641,49 +640,34 @@ namespace DrawPrimitives
             SendToBackItems();
         }
 
+        private string GetTitle()
+        {
+            return $"{fileName} - {this.ProductName.SplitCamelCase()}";
+        }
+
         private void Export()
         {
             var dialog = new SaveFileDialog();
 
-            var codecs = ImageCodecInfo.GetImageEncoders();
-            var sep = string.Empty;
-
-            foreach (var c in codecs)
-            {
-                if (c.CodecName != null)
-                {
-                    string codecName = c.CodecName.Substring(8).Replace("Codec", "Files").Trim();
-                    dialog.Filter = string.Format("{0}{1}{2} ({3})|{3}", dialog.Filter, sep, codecName, c.FilenameExtension);
-                    sep = "|";
-                }
-            }
-
-            dialog.Filter = string.Format("{0}{1}{2} ({3})|{3}", dialog.Filter, sep, "All Files", "*.*");
+            dialog.Filter = "PNG files (*.png)|*.png|JPG files (*.jpg)|*.jpg|GIF files (*.gif)|*.gif|BMP files (*.bmp)|*.bmp|HEIC files (*.heic)|*.heic|TIFF files (*.tif)|*.tif|All files (*.*)|*.*";
             dialog.DefaultExt = ".png";
 
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 fileFullName = dialog.FileName;
                 fileName = Path.GetFileNameWithoutExtension(fileFullName);
-
                 try
                 {
-                    if ((dialog.FilterIndex - 1) >= codecs.Length)
+                    using (var map = GetBitmap(false))
                     {
-                        GetBitmap(false).Save(fileFullName);
-                    }
-                    else
-                    {
-                        EncoderParameters encoderParams = new EncoderParameters(1);
-                        EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, 25L);
-                        encoderParams.Param[0] = encoderParam;
-                        GetBitmap(false).Save(fileFullName, codecs[dialog.FilterIndex], encoderParams);
+                        map.Save(fileFullName);
                     }
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+                this.Text = GetTitle();
             }
         }
 
@@ -706,6 +690,25 @@ namespace DrawPrimitives
         private void exportToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Export();
+        }
+
+        private void SaveFile()
+        {
+
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (!IsSaved())
+            {
+                var res = NonSavedFileDialog.ShowNonSaveDialog();
+                if (res == DialogResult.Yes)
+                {
+                    SaveFile();
+                }
+                else if(res == DialogResult.Cancel)
+                    e.Cancel = true;
+            }
         }
     }
 }

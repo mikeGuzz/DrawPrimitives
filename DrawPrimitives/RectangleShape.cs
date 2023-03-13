@@ -37,15 +37,12 @@ namespace DrawPrimitives
         {
             if (Pen != null)
                 g.DrawRectangle(Pen, Bounds);
-
-            g.ResetTransform();
         }
 
         public override void DrawFill(Graphics g)
         {
             if (Brush != null)
-                g.FillRectangle(Brush, GetNormalizedBounds());
-            var n = (Shape)this;
+                g.FillRectangle(Brush, GetWithotNegative());
         }
     }
 }

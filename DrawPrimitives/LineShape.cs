@@ -37,7 +37,7 @@ namespace DrawPrimitives
         {
             if (Pen != null)
             {
-                var rBounds = GetNormalizedBounds();
+                var rBounds = GetWithotNegative();
                 g.DrawLine(Pen, rBounds.Location, new Point(rBounds.Width, rBounds.Height));
             }
                 
