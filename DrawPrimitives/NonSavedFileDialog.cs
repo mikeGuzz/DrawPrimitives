@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -16,7 +17,16 @@ namespace DrawPrimitives
         {
             InitializeComponent();
 
-            this.Text = this.ProductName.SplitCamelCase();
+            Text = ProductName.SplitCamelCase();
+            save_button.Focus();
+        }
+
+        public NonSavedFileDialog(string fileName)
+        {
+            InitializeComponent();
+
+            label.Text = string.Format("Do you want to save changes to {0}?", fileName);
+            Text = this.ProductName.SplitCamelCase();
             save_button.Focus();
         }
 
@@ -33,11 +43,6 @@ namespace DrawPrimitives
         private void cancel_button_Click(object sender, EventArgs e)
         {
             DialogResult = DialogResult.Cancel;
-        }
-
-        public static DialogResult ShowNonSaveDialog()
-        {
-            return new NonSavedFileDialog().ShowDialog();
         }
     }
 }

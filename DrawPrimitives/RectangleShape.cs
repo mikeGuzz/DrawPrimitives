@@ -36,13 +36,13 @@ namespace DrawPrimitives
         public override void DrawStroke(Graphics g)
         {
             if (Pen != null)
-                g.DrawRectangle(Pen, Bounds);
+                g.DrawRectangle(Pen, GetWithoutNegative());
         }
 
         public override void DrawFill(Graphics g)
         {
             if (Brush != null)
-                g.FillRectangle(Brush, GetWithotNegative());
+                g.FillRectangle(Brush, GetWithoutNegative());
         }
     }
 }

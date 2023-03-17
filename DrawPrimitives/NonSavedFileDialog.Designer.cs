@@ -28,22 +28,22 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
+            this.label = new System.Windows.Forms.Label();
             this.cancel_button = new System.Windows.Forms.Button();
             this.dontSave_button = new System.Windows.Forms.Button();
             this.save_button = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
-            // label1
+            // label
             // 
-            this.label1.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.label1.ForeColor = System.Drawing.Color.RoyalBlue;
-            this.label1.Location = new System.Drawing.Point(12, 9);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(338, 71);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Do you want to save {0}?";
-            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.label.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.label.ForeColor = System.Drawing.Color.RoyalBlue;
+            this.label.Location = new System.Drawing.Point(12, 9);
+            this.label.Name = "label";
+            this.label.Size = new System.Drawing.Size(338, 71);
+            this.label.TabIndex = 0;
+            this.label.Text = "Do you want to save changes?";
+            this.label.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // cancel_button
             // 
@@ -83,7 +83,7 @@
             this.Controls.Add(this.save_button);
             this.Controls.Add(this.dontSave_button);
             this.Controls.Add(this.cancel_button);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.label);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -96,7 +96,7 @@
 
         #endregion
 
-        private Label label1;
+        private Label label;
         private Button cancel_button;
         private Button dontSave_button;
         private Button save_button;
