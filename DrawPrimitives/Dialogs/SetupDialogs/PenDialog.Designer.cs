@@ -1,6 +1,6 @@
-﻿namespace DrawPrimitives
+﻿namespace DrawPrimitives.Dialog.SetupDialogs
 {
-    partial class PenSetupDialog
+    partial class PenDialog
     {
         /// <summary>
         /// Required designer variable.
@@ -54,6 +54,8 @@
             this.label8 = new System.Windows.Forms.Label();
             this.ok_button = new System.Windows.Forms.Button();
             this.cancel_button = new System.Windows.Forms.Button();
+            this.label10 = new System.Windows.Forms.Label();
+            this.aligment_comboBox = new System.Windows.Forms.ComboBox();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.opacity_numericUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.width_numericUpDown)).BeginInit();
@@ -67,6 +69,8 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.aligment_comboBox);
+            this.groupBox1.Controls.Add(this.label10);
             this.groupBox1.Controls.Add(this.label4);
             this.groupBox1.Controls.Add(this.opacity_numericUpDown);
             this.groupBox1.Controls.Add(this.label2);
@@ -76,7 +80,7 @@
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(221, 109);
+            this.groupBox1.Size = new System.Drawing.Size(221, 138);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Main";
@@ -97,14 +101,14 @@
             0,
             0,
             0});
-            this.opacity_numericUpDown.Location = new System.Drawing.Point(66, 51);
+            this.opacity_numericUpDown.Location = new System.Drawing.Point(74, 51);
             this.opacity_numericUpDown.Maximum = new decimal(new int[] {
             255,
             0,
             0,
             0});
             this.opacity_numericUpDown.Name = "opacity_numericUpDown";
-            this.opacity_numericUpDown.Size = new System.Drawing.Size(89, 23);
+            this.opacity_numericUpDown.Size = new System.Drawing.Size(81, 23);
             this.opacity_numericUpDown.TabIndex = 5;
             this.opacity_numericUpDown.Value = new decimal(new int[] {
             255,
@@ -125,7 +129,7 @@
             // width_numericUpDown
             // 
             this.width_numericUpDown.DecimalPlaces = 2;
-            this.width_numericUpDown.Location = new System.Drawing.Point(66, 80);
+            this.width_numericUpDown.Location = new System.Drawing.Point(74, 80);
             this.width_numericUpDown.Maximum = new decimal(new int[] {
             32,
             0,
@@ -137,7 +141,7 @@
             0,
             0});
             this.width_numericUpDown.Name = "width_numericUpDown";
-            this.width_numericUpDown.Size = new System.Drawing.Size(89, 23);
+            this.width_numericUpDown.Size = new System.Drawing.Size(81, 23);
             this.width_numericUpDown.TabIndex = 3;
             this.width_numericUpDown.Value = new decimal(new int[] {
             3,
@@ -160,9 +164,9 @@
             // 
             this.colorPrev_pictureBox.BackColor = System.Drawing.Color.Black;
             this.colorPrev_pictureBox.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.colorPrev_pictureBox.Location = new System.Drawing.Point(66, 22);
+            this.colorPrev_pictureBox.Location = new System.Drawing.Point(74, 22);
             this.colorPrev_pictureBox.Name = "colorPrev_pictureBox";
-            this.colorPrev_pictureBox.Size = new System.Drawing.Size(89, 23);
+            this.colorPrev_pictureBox.Size = new System.Drawing.Size(81, 23);
             this.colorPrev_pictureBox.TabIndex = 1;
             this.colorPrev_pictureBox.TabStop = false;
             // 
@@ -185,7 +189,7 @@
             this.groupBox2.Controls.Add(this.label);
             this.groupBox2.Controls.Add(this.dashCap_comboBox);
             this.groupBox2.Controls.Add(this.label3);
-            this.groupBox2.Location = new System.Drawing.Point(12, 127);
+            this.groupBox2.Location = new System.Drawing.Point(12, 156);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(221, 139);
             this.groupBox2.TabIndex = 1;
@@ -302,7 +306,7 @@
             this.groupBox3.Controls.Add(this.label7);
             this.groupBox3.Controls.Add(this.startCap_comboBox);
             this.groupBox3.Controls.Add(this.label6);
-            this.groupBox3.Location = new System.Drawing.Point(12, 272);
+            this.groupBox3.Location = new System.Drawing.Point(12, 301);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(221, 83);
             this.groupBox3.TabIndex = 1;
@@ -350,7 +354,7 @@
             // preview_pictureBox
             // 
             this.preview_pictureBox.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.preview_pictureBox.Location = new System.Drawing.Point(72, 361);
+            this.preview_pictureBox.Location = new System.Drawing.Point(72, 390);
             this.preview_pictureBox.Name = "preview_pictureBox";
             this.preview_pictureBox.Size = new System.Drawing.Size(161, 45);
             this.preview_pictureBox.TabIndex = 5;
@@ -360,7 +364,7 @@
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(12, 361);
+            this.label8.Location = new System.Drawing.Point(12, 390);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(54, 15);
             this.label8.TabIndex = 6;
@@ -368,7 +372,7 @@
             // 
             // ok_button
             // 
-            this.ok_button.Location = new System.Drawing.Point(77, 412);
+            this.ok_button.Location = new System.Drawing.Point(77, 441);
             this.ok_button.Name = "ok_button";
             this.ok_button.Size = new System.Drawing.Size(75, 23);
             this.ok_button.TabIndex = 7;
@@ -378,7 +382,7 @@
             // 
             // cancel_button
             // 
-            this.cancel_button.Location = new System.Drawing.Point(158, 412);
+            this.cancel_button.Location = new System.Drawing.Point(158, 441);
             this.cancel_button.Name = "cancel_button";
             this.cancel_button.Size = new System.Drawing.Size(75, 23);
             this.cancel_button.TabIndex = 8;
@@ -386,11 +390,29 @@
             this.cancel_button.UseVisualStyleBackColor = true;
             this.cancel_button.Click += new System.EventHandler(this.cancel_button_Click);
             // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(6, 112);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(62, 15);
+            this.label10.TabIndex = 7;
+            this.label10.Text = "Aligment: ";
+            // 
+            // aligment_comboBox
+            // 
+            this.aligment_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.aligment_comboBox.FormattingEnabled = true;
+            this.aligment_comboBox.Location = new System.Drawing.Point(74, 109);
+            this.aligment_comboBox.Name = "aligment_comboBox";
+            this.aligment_comboBox.Size = new System.Drawing.Size(141, 23);
+            this.aligment_comboBox.TabIndex = 13;
+            // 
             // PenSetupDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(245, 444);
+            this.ClientSize = new System.Drawing.Size(245, 474);
             this.Controls.Add(this.cancel_button);
             this.Controls.Add(this.ok_button);
             this.Controls.Add(this.label8);
@@ -449,5 +471,7 @@
         private Label label4;
         private NumericUpDown spaceLength_numericUpDown;
         private Label label9;
+        private ComboBox aligment_comboBox;
+        private Label label10;
     }
 }

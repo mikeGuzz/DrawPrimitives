@@ -9,11 +9,18 @@ using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Security;
 using System.Xml.Schema;
+using System.Windows.Forms;
+using System.Xml;
+using DrawPrimitives.Helpers;
+using DrawPrimitives.Shapes;
+using DrawPrimitives.Dialog.SetupDialogs;
+using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Serialization;
 
 namespace DrawPrimitives
 {
-    public enum ToolType { Pointer = 0, DrawShape = 1 };
-    public enum ShapeType { Rectangle, Ellipse, TextBox };
+    public enum ToolType { Pointer, DrawShape };
+    public enum ShapeType { Rectangle, Ellipse, TextBox, Diamond, Pentagon, Hexagone, Parallelepiped };
 
     public partial class Form1 : Form
     {
@@ -24,30 +31,29 @@ namespace DrawPrimitives
         private string fileName => string.IsNullOrEmpty(filePath) ? "Untitled" : (File.Exists(filePath) ? Path.GetFileNameWithoutExtension(filePath) : "Untitled");
 
         //pens
-        private Pen mainPen;
         private readonly Pen selectedPen;
         private readonly Pen anchorPen;
         private readonly Pen selectedBoundsPen;
 
         //brushes
-        private Brush mainBrush;
         private readonly SolidBrush anchorBrush;
         private readonly SolidBrush selectedBoundsBrush;
 
         //select
-        private Rectangle selectedBounds; 
+        private Rectangle selectedBounds;
 
         //transform
         private TransformState transformState = TransformState.None;
         private AnchorPosition selectedAnchorPos = AnchorPosition.None;
         private TransformHelper transformHelper;
         private ShapeAnchor[] anchors;
-        private readonly Size minimumSize = new Size(9, 9);
+        private readonly Size shapeMinimumSize = new Size(9, 9);
 
         //control
         private bool mouseDown;
 
         //shapes
+        private Canvas canvas;
         private List<Shape> shapes = new List<Shape>();
 
         //menu strip
@@ -57,18 +63,37 @@ namespace DrawPrimitives
         //buffer
         private List<Shape> buffer = new List<Shape>();
 
+        //offset
+        private Size clientBoundsSize => new Size(ClientRectangle.X + ClientRectangle.Width - vScrollBar1.Width, ClientRectangle.Height - menuStrip1.Height - hScrollBar1.Height - statusStrip1.Height);
+        private readonly Point startOffsetPoint;
+
+        //undo/redo
+        private UndoRedoHelper<string> undoRedoHelper;
+
+        //json
+        private JsonSerializerOptions jsonProperty;
+
         public Form1()
         {
             InitializeComponent();
 
-            var p1 = new Point(0, 0);
-            var p2 = new Point(-100, -50);
+            jsonProperty = new JsonSerializerOptions()
+            {
+                IncludeFields = true,
+            };
 
-            MessageBox.Show(Rectangle.FromLTRB(p1.X, p1.Y, p2.X, p2.Y).ToString());
+            startOffsetPoint = new Point(pictureBox1.Location.X + 10, pictureBox1.Location.Y + 10);
+
+            hScrollBar1.Value = 0;
+            vScrollBar1.Value = 0;
+            UpdateScrollBars();
+            UpdatePictureBoxLocation();
+
+            canvas = new Canvas(pictureBox1.Size, pictureBox1.BackColor); 
 
             //check on save
-            mainPen = new Pen(Color.Black, 2);
-            mainBrush = new SolidBrush(Color.White);
+            Shape.DefaultPen = new Pen(Color.Black, 4);
+            Shape.DefaultBrush = new SolidBrush(Color.Black);
 
             selectedPen = new Pen(Color.Black, 1.5f);
             selectedPen.Alignment = PenAlignment.Outset;
@@ -93,6 +118,7 @@ namespace DrawPrimitives
                     new ShapeAnchor(anchorSize, AnchorPosition.RightBottom, anchorPen, anchorBrush, AnchorShape.Rectangle),
             };
             transformHelper = new TransformHelper();
+            undoRedoHelper = new UndoRedoHelper<string>();
 
             this.Text = GetTitle();
         }
@@ -138,7 +164,7 @@ namespace DrawPrimitives
             {
                 ob.DrawFill(g);
                 ob.DrawStroke(g);
-                if(ob.IsSelected)
+                if (ob.IsSelected)
                     ob.DrawBounds(g, selectedPen, null);
             }
 
@@ -159,7 +185,7 @@ namespace DrawPrimitives
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
-            if(e.Button != MouseButtons.Left)
+            if (e.Button != MouseButtons.Left)
                 return;
             mouseDown = true;
             selectedBounds.Location = e.Location;
@@ -168,34 +194,50 @@ namespace DrawPrimitives
 
             if (!(controlKeyState && selectedToolType == ToolType.Pointer) && transformHelper.Any())
             {
-                if(IsHitAnyAnchor(e.Location, out var pos))
+                if (IsHitAnyAnchor(e.Location, out var pos))
                 {
                     transformHelper.StartTransform();
                     transformState = TransformState.Scale;
                     selectedAnchorPos = pos;
                     return;
                 }
-                if(transformHelper.IsHit(e.Location))
+                if (transformHelper.IsHit(e.Location))
                 {
                     transformHelper.StartTransform();
                     transformState = TransformState.Move;
                     return;
                 }
             }
-            
+
             //tools logic
             switch (selectedToolType)
             {
                 case ToolType.DrawShape:
                     transformHelper.Clear();
                     Shape shape;
+                    var rect = new Rectangle(e.Location, Size.Empty);
                     switch (selectedShapeType)
                     {
                         case ShapeType.Rectangle:
-                            shape = new RectangleShape(new Rectangle(e.Location, Size.Empty), drawOutlineToolStripMenuItem.Checked ? mainPen : null, drawFillToolStripMenuItem.Checked ? mainBrush : null);
+                            shape = new RectangleShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
                             break;
                         case ShapeType.Ellipse:
-                            shape = new EllipseShape(new Rectangle(e.Location, Size.Empty), drawOutlineToolStripMenuItem.Checked ? mainPen : null, drawFillToolStripMenuItem.Checked ? mainBrush : null);
+                            shape = new EllipseShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
+                            break;
+                        case ShapeType.TextBox:
+                            shape = new TextBoxShape(rect, Shape.DefaultBrush == null ? new SolidBrush(Color.Black) : Shape.DefaultBrush);
+                            break;
+                        case ShapeType.Diamond:
+                            shape = new DiamondShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
+                            break;
+                        case ShapeType.Pentagon:
+                            shape = new PentagonShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
+                            break;
+                        case ShapeType.Hexagone:
+                            shape = new HexagonShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
+                            break;
+                        case ShapeType.Parallelepiped:
+                            shape = new ParallelepipedShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
                             break;
                         default:
                             return;
@@ -206,7 +248,7 @@ namespace DrawPrimitives
                 case ToolType.Pointer:
                     if (!controlKeyState)
                         transformHelper.Clear();
-                    foreach(var ob in shapes.Reverse<Shape>())
+                    foreach (var ob in shapes.Reverse<Shape>())
                     {
                         var p = e.Location;
                         if (p.X > ob.Bounds.X && p.Y > ob.Bounds.Y && p.X < (ob.Bounds.X + ob.Bounds.Width) && p.Y < (ob.Bounds.Y + ob.Bounds.Height))
@@ -235,6 +277,8 @@ namespace DrawPrimitives
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
+            mousePos_toolStripStatusLabel.Text = $"{e.X}, {e.Y}px";
+            ;
             if (transformHelper.Any() && transformState == TransformState.None)
             {
                 if (IsHitAnyAnchor(e.Location, out var pos))
@@ -279,7 +323,7 @@ namespace DrawPrimitives
             selectedBounds.Size = new Size(e.X - selectedBounds.X, e.Y - selectedBounds.Y);
 
             if (transformState != TransformState.None && transformHelper.Any())
-            { 
+            {
                 switch (transformState)
                 {
                     case TransformState.Move:
@@ -321,13 +365,13 @@ namespace DrawPrimitives
                         }
                         var tempBounds = new Rectangle(new Point(increase.Location.X + transformHelper.StartTransformBounds.Location.X, increase.Location.Y + transformHelper.StartTransformBounds.Location.Y), increase.Size + transformHelper.StartTransformBounds.Size);
 
-                        if (minimumSize.Width > tempBounds.Width)
-                            tempBounds.Width = minimumSize.Width;
-                        if (minimumSize.Height > tempBounds.Height)
-                            tempBounds.Height = minimumSize.Height;
+                        if (shapeMinimumSize.Width > tempBounds.Width)
+                            tempBounds.Width = shapeMinimumSize.Width;
+                        if (shapeMinimumSize.Height > tempBounds.Height)
+                            tempBounds.Height = shapeMinimumSize.Height;
 
-                        var minX = (transformHelper.StartTransformBounds.X + transformHelper.StartTransformBounds.Width - minimumSize.Width);
-                        var minY = (transformHelper.StartTransformBounds.Y + transformHelper.StartTransformBounds.Height - minimumSize.Height);
+                        var minX = (transformHelper.StartTransformBounds.X + transformHelper.StartTransformBounds.Width - shapeMinimumSize.Width);
+                        var minY = (transformHelper.StartTransformBounds.Y + transformHelper.StartTransformBounds.Height - shapeMinimumSize.Height);
 
                         if (minX < tempBounds.X)
                             tempBounds.X = minX;
@@ -369,19 +413,27 @@ namespace DrawPrimitives
             if (transformState != TransformState.None)
             {
                 transformState = TransformState.None;
+                if(TryJsonSerializeData(out var json))
+                    undoRedoHelper.AddToUndoStack(json);
                 return;
             }
 
             switch (selectedToolType)
             {
                 case ToolType.DrawShape:
-                    if (!(Math.Abs(selectedBounds.Width) > minimumSize.Width && Math.Abs(selectedBounds.Height) > minimumSize.Height))
+                    if (!(Math.Abs(selectedBounds.Width) > shapeMinimumSize.Width && Math.Abs(selectedBounds.Height) > shapeMinimumSize.Height))
                         shapes.RemoveAt(shapes.Count - 1);
                     else
                     {
                         shapes.Last().IsSelected = false;
                         transformHelper.Add(shapes.Last());
-                    } 
+
+                        if (shapes.Last() is TextBoxShape)
+                            OpenTextShapeDialog(sender, e);
+
+                        if (TryJsonSerializeData(out var json))
+                            undoRedoHelper.AddToUndoStack(json);
+                    }
                     break;
                 case ToolType.Pointer:
                     var normalized = selectedBounds.WithoutNegative();
@@ -459,39 +511,87 @@ namespace DrawPrimitives
 
         private void penSettingToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var dialog = new PenSetupDialog("Pen setting", mainPen);
+            PenDialog dialog;
+            if (Shape.DefaultPen != null)
+                dialog = new PenDialog("Pen setting", Shape.DefaultPen);
+            else
+                dialog = new PenDialog("Pen setting");
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                mainPen = dialog.GetValue();
+                Shape.DefaultPen = dialog.GetValue();
                 foreach (var ob in transformHelper)
                 {
-                    ob.Pen = mainPen;
+                    ob.Pen = Shape.DefaultPen;
                 }
                 pictureBox1.Invalidate();
             }
-        }
+        }//save state for undo/redo
 
         private void brushSettingToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var dialog = new BrushSetupDialog("Brush setting", mainBrush);
+            BrushDialog dialog;
+            if (Shape.DefaultBrush is SolidBrush solid)
+                dialog = new BrushDialog("Brush setting", solid);
+            else if (Shape.DefaultBrush is HatchBrush hatch)
+                dialog = new BrushDialog("Brush setting", hatch);
+            else if (Shape.DefaultBrush is TextureBrush texture)
+                dialog = new BrushDialog("Brush setting", texture);
+            else return;
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                mainBrush = dialog.GetValue();
+                Shape.DefaultBrush = dialog.GetValue();
                 foreach (var ob in transformHelper)
                 {
-                    ob.Brush = mainBrush;
+                    ob.Brush = Shape.DefaultBrush;
                 }
                 pictureBox1.Invalidate();
             }
-        }
+        }//save state for undo/redo
+
+        //private void brushSettingToolStripMenuItem_Click(object sender, EventArgs e)
+        //{
+        //    string title = "Brush setting";
+        //    BrushSetupDialog dialog;
+        //    if (!transformHelper.Any())
+        //    {
+        //        dialog = new BrushSetupDialog(title);
+        //    }
+        //    else if (transformHelper.Count == 1)
+        //    {
+        //        title += " (1 item)";
+        //        if (mainBrush is SolidBrush solid)
+        //            dialog = new BrushSetupDialog(title, solid);
+        //        else if (mainBrush is HatchBrush hatch)
+        //            dialog = new BrushSetupDialog(title, hatch);
+        //        else if (mainBrush is TextureBrush texture)
+        //            dialog = new BrushSetupDialog(title, texture);
+        //        else return;
+        //    }
+        //    else
+        //    {
+        //        title += $" ({transformHelper.Count} items)";
+        //        dialog = new BrushSetupDialog(title);
+        //    }
+        //    if (dialog.ShowDialog() == DialogResult.OK)
+        //    {
+        //        mainBrush = dialog.GetValue();
+        //        foreach (var ob in transformHelper)
+        //        {
+        //            ob.Brush = mainBrush;
+        //        }
+        //        pictureBox1.Invalidate();
+        //    }
+        //}//save state for undo/redo
 
         private void RemoveItems()
         {
-            foreach(var ob in transformHelper)
+            foreach (var ob in transformHelper)
             {
                 shapes.Remove(ob);
             }
             transformHelper.Clear();
+            if (TryJsonSerializeData(out var json))
+                undoRedoHelper.AddToUndoStack(json);
         }
 
         private void CutItems()
@@ -502,6 +602,8 @@ namespace DrawPrimitives
             buffer.AddRange(transformHelper.Select(i => (Shape)i.Clone()));
             RemoveItems();
             pictureBox1.Invalidate();
+            if (TryJsonSerializeData(out var json))
+                undoRedoHelper.AddToUndoStack(json);
         }
 
         private void PasteItems()
@@ -525,6 +627,8 @@ namespace DrawPrimitives
                 return i;
             }));
             pictureBox1.Invalidate();
+            if (TryJsonSerializeData(out var json))
+                undoRedoHelper.AddToUndoStack(json);
         }
 
         private void CopyItems()
@@ -533,7 +637,6 @@ namespace DrawPrimitives
                 return;
             buffer.Clear();
             buffer.AddRange(transformHelper.Select(i => (Shape)i.Clone()));
-            pictureBox1.Invalidate();
         }
 
         private void BringToFrontItems()
@@ -549,6 +652,8 @@ namespace DrawPrimitives
                 }
             }
             pictureBox1.Invalidate();
+            if (TryJsonSerializeData(out var json))
+                undoRedoHelper.AddToUndoStack(json);
         }
 
         private void SendToBackItems()
@@ -563,6 +668,8 @@ namespace DrawPrimitives
                 }
             }
             pictureBox1.Invalidate();
+            if (TryJsonSerializeData(out var json))
+                undoRedoHelper.AddToUndoStack(json);
         }
 
         private void cutToolStripMenuItem1_Click(object sender, EventArgs e)
@@ -599,31 +706,81 @@ namespace DrawPrimitives
             pictureBox1.Invalidate();
         }
 
+        private void OpenTextShapeDialog(object? sender, EventArgs e)
+        {
+            if (transformHelper.Count != 1)
+                return;
+            if (transformHelper.First() is not TextBoxShape)
+                return;
+            var shape = (TextBoxShape)transformHelper.Single();
+            var dialog = new TextShapeDialog("Text setting", shape);
+            if(dialog.ShowDialog() == DialogResult.OK)
+            {
+                shape.Text = dialog.SelectedText;
+                shape.Font = dialog.SelectedFont;
+                TextBoxShape.DefaultFont = dialog.SelectedFont;
+            }
+            pictureBox1.Invalidate();
+        }
+
         private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
             bool oneOrMoreSelected = transformHelper.Count >= 1;
-            propertiesToolStripMenuItem.Enabled = transformHelper.Count == 1;
+            propertiesToolStripMenuItem.Enabled = transformHelper.Any();
             cutToolStripMenuItem.Enabled = oneOrMoreSelected;
             copyToolStripMenuItem.Enabled = oneOrMoreSelected;
             pasteToolStripMenuItem.Enabled = buffer.Any();
             deleteToolStripMenuItem.Enabled = oneOrMoreSelected;
             bringToFrontToolStripMenuItem.Enabled = oneOrMoreSelected;
             sendToBackToolStripMenuItem.Enabled = oneOrMoreSelected;
+
+            if(transformHelper.Count == 1 && transformHelper.Single() is TextBoxShape)
+            {
+                contextMenuStrip1.Items.Insert(1, new ToolStripMenuItem("Edit Text", null, OpenTextShapeDialog));
+                contextMenuStrip1.Items[1].Tag = true;
+            }
+        }
+
+        private void contextMenuStrip1_Closing(object sender, ToolStripDropDownClosingEventArgs e)
+        {
+            if (contextMenuStrip1.Items[1].Tag is not null)
+                contextMenuStrip1.Items.RemoveAt(1);
+        }
+
+        private void ShowSelectedShapesProperties()
+        {
+            if (!transformHelper.Any())
+                return;
+            var title = $"Shape setting ({transformHelper.Count} item)";
+            ShapeDialog dialog;
+            if (transformHelper.Count == 1)
+                dialog = new ShapeDialog(title, transformHelper.Single());
+            else
+                dialog = new ShapeDialog(title, transformHelper);
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                foreach(var ob in transformHelper)
+                {
+                    if (dialog.IsEditedSize)
+                        ob.Bounds.Size = dialog.ShapeSize;
+                    if(dialog.IsEditedLocation)
+                        ob.Bounds.Location = dialog.ShapeLocation;
+                    if (dialog.IsEditedBrush)
+                        ob.Brush = dialog.ShapeBrush;
+                    if (dialog.IsEditedPen)
+                        ob.Pen = dialog.ShapePen;
+                    if (dialog.IsEditedFlipX)
+                        ob.FlipX = dialog.ShapeFlipX;
+                    if (dialog.IsEditedFlipY)
+                        ob.FlipY = dialog.ShapeFlipY;
+                }
+                pictureBox1.Invalidate();
+            }
         }
 
         private void propertiesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (transformHelper.Count != 1)
-                return;
-            var dialog = new SetupShapePropertiesDialog("Shape setting", transformHelper.Single());
-            if (dialog.ShowDialog() == DialogResult.OK)
-            {
-                var index = shapes.IndexOf(transformHelper.Single());
-                if (index == -1)
-                    return;
-                shapes[index] = dialog.GetValue();
-                pictureBox1.Invalidate();
-            }
+            ShowSelectedShapesProperties();
         }
 
         private void cutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -657,6 +814,70 @@ namespace DrawPrimitives
             SendToBackItems();
         }
 
+        private bool TryXmlDeseializeData(string filePath, out MyOrder order)
+        {
+            order = new MyOrder();
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException(filePath);
+            XmlSerializer serializer = new XmlSerializer(typeof(MyOrder));
+            try
+            {
+                using (Stream s = File.OpenRead(filePath))
+                {
+                    if (serializer.Deserialize(s) is MyOrder ob)
+                    {
+                        order = ob;
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool TryJsonSerializeData(out string json)
+        {
+            json = string.Empty;
+            try
+            {
+                json = JsonSerializer.Serialize(new MyOrder(canvas, shapes.ToArray()), jsonProperty);
+                using(Stream s = File.Create("myjson.txt"))
+                {
+                    using (var t = new StreamWriter(s))
+                    {
+                        t.Write(json);
+                    }
+                }
+                return true;
+            }
+            catch 
+            { 
+                return false; 
+            }
+        }
+
+        private bool TryJsonDeserializeData(string json, out MyOrder order)
+        {
+            order = new MyOrder();
+            try
+            {
+                var ob = JsonSerializer.Deserialize<MyOrder>(json, jsonProperty);
+                if (ob != null)
+                {
+                    order = ob;
+                    return true;
+                }
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", ProductName.SplitCamelCase(), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return false;
+        }
+
         private bool IsSaved()
         {
             if (!File.Exists(filePath))
@@ -665,23 +886,18 @@ namespace DrawPrimitives
             }
             else
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(Shape[]));
-                try
+                if(TryXmlDeseializeData(filePath, out var order))
                 {
-                    using (Stream s = File.OpenRead(filePath))
-                    {
-                        if (serializer.Deserialize(s) is Shape[] list)
-                        {
-                            return shapes.Except(list).Count() == 0;
-                        }
-                    }
-                    return false;
-                }
-                catch
-                {
-                    return false;
+                    if (order.Shapes == null)
+                        return !(shapes.Count > 0);
+                    if(shapes.Except(order.Shapes).Count() != 0)
+                        return false;
+                    if (order.Canvas == null)
+                        return false;
+                    return order.Canvas == canvas;
                 }
             }
+            return false;
         }
 
         private string GetTitle()
@@ -694,6 +910,9 @@ namespace DrawPrimitives
             Bitmap map = new Bitmap(pictureBox1.Width, pictureBox1.Height);
             using (var g = Graphics.FromImage(map))
             {
+                g.Clear(pictureBox1.BackColor);
+                if(pictureBox1.Image != null)
+                    g.DrawImage(pictureBox1.Image, Point.Empty);
                 foreach (var ob in shapes)
                 {
                     ob.DrawFill(g);
@@ -737,34 +956,28 @@ namespace DrawPrimitives
 
         public bool Save(string fileName)
         {
-            // json serialize a array of shapes
-
-            //using (Stream s = File.Create("jsonShapeSer.txt"))
-            //{
-            //    using (StreamWriter w = new StreamWriter(s))
-            //    {
-            //        var opt = new JsonSerializerOptions()
-            //        {
-            //            WriteIndented = true,
-            //        };
-            //        string json = JsonSerializer.Serialize(shapes.ToArray(), opt);
-
-            //        w.WriteLine(json);
-            //    }
-            //}
-
             try
-            {//use xmlwriter
+            {
                 using (Stream s = File.Create(fileName))
                 {
-                    XmlSerializer serializer = new XmlSerializer(typeof(Shape[]));
-                    serializer.Serialize(s, shapes.ToArray());
+                    XmlSerializer serializer = new XmlSerializer(typeof(MyOrder));
+                    serializer.Serialize(s, new MyOrder(canvas, shapes.ToArray()));
+
                     filePath = fileName;
-                    Text = GetTitle();
+                    Text = GetTitle();                    
                 }
+
+                //using(Stream s = File.Create("xmlText.txt"))
+                //{
+                //    using (StreamWriter w = new StreamWriter(s))
+                //    {
+                //        XmlSerializer serializer = new XmlSerializer(typeof(MyOrder));
+                //        serializer.Serialize(w, new MyOrder(canvas, shapes.ToArray()));
+                //    }
+                //}
                 return true;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 MessageBox.Show(e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
@@ -789,7 +1002,7 @@ namespace DrawPrimitives
 
         public void New()
         {
-            if(!IsSaved())
+            if (!IsSaved())
             {
                 var res = new NonSavedFileDialog(string.IsNullOrEmpty(filePath) ? "Untitled" : filePath).ShowDialog();
                 if (res == DialogResult.Yes)
@@ -805,7 +1018,21 @@ namespace DrawPrimitives
             pictureBox1.Invalidate();
         }
 
-        public bool OpenXml(string fileName)
+        private void LoadFromOrder(MyOrder order)
+        {
+            transformHelper.Clear();
+            shapes.Clear();
+
+            if (order.Shapes != null)
+                shapes.AddRange(order.Shapes);
+            if (order.Canvas != null)
+                canvas = order.Canvas;
+            //canvas.SetupPictureBox(pictureBox1);
+
+            pictureBox1.Invalidate();
+        }
+
+        public bool OpenXmlFile(string fileName)
         {
             if (!File.Exists(fileName))
                 throw new FileNotFoundException();
@@ -817,45 +1044,30 @@ namespace DrawPrimitives
                 else if (res == DialogResult.Cancel)
                     return false;
             }
-            XmlSerializer serializer = new XmlSerializer(typeof(List<Shape>));
             try
             {
-                using(Stream s = File.OpenRead(fileName))
+                if (TryXmlDeseializeData(fileName, out var order))
                 {
-                    if(serializer.Deserialize(s) is List<Shape> list)
-                    {
-                        transformHelper.Clear();
-                        shapes.Clear();
-
-                        shapes.AddRange(list);
-                        filePath = fileName;
-                        Text = GetTitle();
-
-                        pictureBox1.Invalidate();
-
-                        return true;
-                    }
-                    else
-                    {
-                        MessageBox.Show($"'{fileName}'\n{ProductName.SplitCamelCase()} cannot read this file.\nThis is not a valid bitmap file, or its format is not currently supported.", ProductName.SplitCamelCase(), MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return false;
-                    }
+                    LoadFromOrder(order);
+                    filePath = fileName;
+                    Text = GetTitle();
+                    return true;
                 }
             }
             catch(Exception e)
             {
-                MessageBox.Show($"An error occurred while loading file '{fileName}'.\nError message: {e.Message}", ProductName.SplitCamelCase(), MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
+                MessageBox.Show($"Error: {e.Message}", ProductName.SplitCamelCase(), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            return false;
         }
 
         private void Open()
         {
             var dialog = new OpenFileDialog();
             dialog.Filter = "XML files (*.xml)|*.xml|All files (*.*)|*.*";
-            if(dialog.ShowDialog() == DialogResult.OK)
+            if (dialog.ShowDialog() == DialogResult.OK)
             {
-                OpenXml(dialog.FileName);
+                OpenXmlFile(dialog.FileName);
             }
         }
 
@@ -866,7 +1078,7 @@ namespace DrawPrimitives
                 var res = new NonSavedFileDialog(string.IsNullOrEmpty(filePath) ? "Untitled" : filePath).ShowDialog();
                 if (res == DialogResult.Yes)
                     Save();
-                else if(res == DialogResult.Cancel)
+                else if (res == DialogResult.Cancel)
                     e.Cancel = true;
             }
         }
@@ -894,6 +1106,90 @@ namespace DrawPrimitives
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Open();
+        }
+
+        private void hScrollBar1_Scroll(object sender, ScrollEventArgs e)
+        {
+            UpdatePictureBoxLocation();
+        }
+
+        private void vScrollBar1_Scroll(object sender, ScrollEventArgs e)
+        {
+            UpdatePictureBoxLocation();
+        }
+
+        private void UpdatePictureBoxLocation()
+        {
+            pictureBox1.Location = new Point(startOffsetPoint.X - hScrollBar1.Value, startOffsetPoint.Y - vScrollBar1.Value);
+        }
+
+        private void UpdateScrollBars()
+        {
+            var size = clientBoundsSize;
+            var diffX = (pictureBox1.Location.X + pictureBox1.Size.Width) - (size.Width + startOffsetPoint.X) + vScrollBar1.Width;
+            var diffY = (pictureBox1.Location.Y + pictureBox1.Size.Height) - (size.Height + startOffsetPoint.Y) + hScrollBar1.Height;
+
+            hScrollBar1.Enabled = !(pictureBox1.Location.X >= startOffsetPoint.X && diffX <= 0);
+            if(hScrollBar1.Enabled)
+            {
+                hScrollBar1.Maximum = diffX + (hScrollBar1.LargeChange - 1);
+                hScrollBar1.Minimum = 0;
+            }
+            vScrollBar1.Enabled = !(pictureBox1.Location.Y >= startOffsetPoint.Y && diffY <= 0);
+            if(vScrollBar1.Enabled)
+            {
+                vScrollBar1.Maximum = diffY + (vScrollBar1.LargeChange - 1);
+                vScrollBar1.Minimum = 0;
+            }
+        }
+
+        private void Form1_SizeChanged(object sender, EventArgs e)
+        {
+            UpdateScrollBars();
+            UpdatePictureBoxLocation();
+        }
+
+        private void canvasSettingToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            CanvasDialog dialog;
+            dialog = new CanvasDialog("Canvas setting", canvas);
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                canvas = dialog.GetValue();
+                //canvas.SetupPictureBox(pictureBox1);
+                UpdateScrollBars();//temp
+                UpdatePictureBoxLocation();
+                if (TryJsonSerializeData(out var json))
+                    undoRedoHelper.AddToUndoStack(json);
+            }
+        }
+
+        private void undoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (undoRedoHelper.CanUndo())
+            {
+                if (TryJsonDeserializeData(undoRedoHelper.GetFromUndoStack(), out var res))
+                    LoadFromOrder(res);
+                else
+                    undoRedoHelper.Clear();
+            }
+        }
+
+        private void redoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (undoRedoHelper.CanRedo())
+            {
+                if (TryJsonDeserializeData(undoRedoHelper.GetFromRedoStack(), out var res))
+                    LoadFromOrder(res);
+                else
+                    undoRedoHelper.Clear();
+            }
+        }
+
+        private void editToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
+        {
+            undoToolStripMenuItem.Enabled = undoRedoHelper.CanUndo();
+            redoToolStripMenuItem.Enabled = undoRedoHelper.CanRedo();
         }
     }
 }

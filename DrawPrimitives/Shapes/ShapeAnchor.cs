@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DrawPrimitives
+namespace DrawPrimitives.Shapes
 {
     public enum AnchorPosition { None, Left, Top, Right, Bottom, LeftTop, LeftBottom, RightTop, RightBottom, OverShape }
     public enum AnchorShape { Rectangle, Round, Triangle }
@@ -16,7 +16,7 @@ namespace DrawPrimitives
     {
         public Size Size;
         public AnchorPosition Position { get; set; }
-        public AnchorShape Shape { get; set; } 
+        public AnchorShape Shape { get; set; }
         public Pen Pen { get; set; }
         public Brush? Brush { get; set; } = null;
         public Size Offset = Size.Empty;
@@ -116,10 +116,10 @@ namespace DrawPrimitives
 
         public object Clone()
         {
-            var ob = (ShapeAnchor)this.MemberwiseClone();
-            ob.Pen = (Pen)this.Pen.Clone();
-            if(Brush != null)
-                ob.Brush = (Brush)this.Brush.Clone();
+            var ob = (ShapeAnchor)MemberwiseClone();
+            ob.Pen = (Pen)Pen.Clone();
+            if (Brush != null)
+                ob.Brush = (Brush)Brush.Clone();
             return ob;
         }
     }

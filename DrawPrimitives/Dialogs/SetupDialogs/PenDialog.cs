@@ -9,11 +9,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace DrawPrimitives
+namespace DrawPrimitives.Dialog.SetupDialogs
 {
-    public partial class PenSetupDialog : Form
+    public partial class PenDialog : Form
     {
-        public PenSetupDialog(string text)
+        public PenDialog(string text)
         {
             InitializeComponent();
             Setup();
@@ -22,10 +22,10 @@ namespace DrawPrimitives
             dashStyle_comboBox.SelectedIndex = 0;
             startCap_comboBox.SelectedIndex = 0;
             endCap_comboBox.SelectedIndex = 0;
-            this.Text = text;
+            Text = text;
         }
 
-        public PenSetupDialog(string text, Pen p)
+        public PenDialog(string text, Pen p)
         {
             InitializeComponent();
             Setup();
@@ -33,6 +33,7 @@ namespace DrawPrimitives
             dashStyle_comboBox.SelectedItem = p.DashStyle.ToString();
             startCap_comboBox.SelectedItem = p.StartCap.ToString();
             endCap_comboBox.SelectedItem = p.EndCap.ToString();
+            aligment_comboBox.SelectedItem = p.Alignment.ToString();
             opacity_numericUpDown.Value = p.Color.A;
             colorPrev_pictureBox.BackColor = Color.FromArgb(255, p.Color);
             width_numericUpDown.Value = (decimal)p.Width;
@@ -41,7 +42,7 @@ namespace DrawPrimitives
                 dashLength_numericUpDown.Value = Convert.ToDecimal(p.DashPattern[0]);
                 spaceLength_numericUpDown.Value = Convert.ToDecimal(p.DashPattern[1]);
             }
-            this.Text = text;
+            Text = text;
         }
 
         private void Setup()
@@ -59,6 +60,10 @@ namespace DrawPrimitives
                 startCap_comboBox.Items.Add(ob);
                 endCap_comboBox.Items.Add(ob);
             }
+            foreach(var ob in Enum.GetNames(typeof(PenAlignment)))
+            {
+                aligment_comboBox.Items.Add(ob);
+            }
         }
 
         public Pen GetValue()
@@ -74,6 +79,8 @@ namespace DrawPrimitives
                 pen.StartCap = (LineCap)value;
             if (Enum.TryParse(typeof(LineCap), (string)endCap_comboBox.SelectedItem, out value) && value != null)
                 pen.EndCap = (LineCap)value;
+            if (Enum.TryParse(typeof(PenAlignment), (string)aligment_comboBox.SelectedItem, out value) && value != null)
+                pen.Alignment = (PenAlignment)value;
             return pen;
         }
 

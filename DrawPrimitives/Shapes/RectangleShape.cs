@@ -7,17 +7,19 @@ using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DrawPrimitives
+namespace DrawPrimitives.Shapes
 {
     public class RectangleShape : Shape
     {
         public RectangleShape() : base() { }
 
-        public RectangleShape(Shape ob) : base(ob) { }
+        public RectangleShape(RectangleShape ob) : base(ob) { }
 
         public RectangleShape(Rectangle bounds) : base()
         {
             Bounds = bounds;
+            Brush = DefaultBrush;
+            Pen = DefaultPen;
         }
 
         public RectangleShape(Pen? pen, Brush? brush) : base()
@@ -35,12 +37,14 @@ namespace DrawPrimitives
 
         public override void DrawStroke(Graphics g)
         {
+            base.DrawStroke(g);
             if (Pen != null)
                 g.DrawRectangle(Pen, GetWithoutNegative());
         }
 
         public override void DrawFill(Graphics g)
         {
+            base.DrawFill(g);
             if (Brush != null)
                 g.FillRectangle(Brush, GetWithoutNegative());
         }

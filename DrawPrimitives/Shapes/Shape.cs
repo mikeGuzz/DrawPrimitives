@@ -15,70 +15,20 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Formats.Asn1;
 using System.Xml.Linq;
+using System.CodeDom;
+using System.ComponentModel;
+using DrawPrimitives.Helpers;
 
-namespace DrawPrimitives
+namespace DrawPrimitives.Shapes
 {
-    public sealed class PenSerializeHelper
-    {
-        public float Width { get; set; }
-        public int ArgbColor { get; set; }
-        public PenAlignment Alignment { get; set; }
-        public DashCap DashCap { get; set; }
-        public float DashOffset { get; set; }
-        public float[]? DashPattern { get; set; }
-        public DashStyle DashStyle { get; set; }
-        public LineCap StartCap { get; set; }
-        public LineCap EndCap { get; set; }
-        public LineJoin LineJoin { get; set; }
-        public float MiterLimit { get; set; }
-        public Matrix? Transform { get; set; }
-        public PenType PenType { get; set; }
-
-        public PenSerializeHelper() { }
-
-        public PenSerializeHelper(Pen? p)
-        {
-            if (p == null)
-                return;
-            ArgbColor = p.Color.ToArgb();
-            Width = p.Width;
-            Alignment = p.Alignment;
-            DashCap = p.DashCap;
-            DashOffset = p.DashOffset;
-            if (p.DashStyle == DashStyle.Custom)
-                DashPattern = p.DashPattern;
-            DashStyle = p.DashStyle;
-            StartCap = p.StartCap;
-            EndCap = p.EndCap;
-            LineJoin = p.LineJoin;
-            MiterLimit = p.MiterLimit;
-            Transform = p.Transform;
-        }
-
-        public Pen ToPen()
-        {
-            var pen = new Pen(Color.FromArgb(ArgbColor), Width);
-            pen.DashCap = DashCap; 
-            pen.DashOffset = DashOffset;
-            if(DashPattern != null)
-                pen.DashPattern = DashPattern;
-            pen.StartCap = StartCap;
-            pen.EndCap = EndCap;
-            pen.Alignment = Alignment;
-            pen.LineJoin = LineJoin;
-            pen.DashStyle = DashStyle;
-            pen.MiterLimit = MiterLimit;
-            if (Transform != null)
-                pen.Transform = Transform;
-            return pen;
-        }
-    }
-
     [Serializable]
     [XmlInclude(typeof(EllipseShape))]
     [XmlInclude(typeof(RectangleShape))]
     public abstract class Shape : IDisposable, ICloneable
     {
+        public static Pen? DefaultPen { get; set; }
+        public static Brush? DefaultBrush { get; set; }
+
         [JsonInclude]
         public Rectangle Bounds;
         [JsonIgnore]
@@ -90,10 +40,15 @@ namespace DrawPrimitives
         [JsonIgnore]
         [XmlIgnore]
         public bool IsSelected { get; set; }
+        public bool FlipX { get; set; }
+        public bool FlipY { get; set; }
+        public bool UsePen { get; set; } = true;
+        public bool UseBrush { get; set; } = true;
 
         [JsonPropertyName(name: "Pen")]
         [XmlElement(ElementName = "Pen")]
-        public PenSerializeHelper PenSerializeHelper
+        [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
+        public PenSerializeHelper? PenSerialized
         {
             get//serialize
             {
@@ -101,11 +56,33 @@ namespace DrawPrimitives
             }
             set//deserialize
             {
-                Pen = value.ToPen();
+                Pen = value?.ToPen();
+            }
+        }
+
+        [JsonPropertyName(name: "Brush")]
+        [XmlElement(ElementName = "Brush")]
+        [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
+        public BrushSerializeHelper? BrushSerialized
+        {
+            get//serialize
+            {
+                if (Brush == null)
+                    return null;
+                if (Brush is SolidBrush solid)
+                    return new SolidBrushSerializeHelper(solid);
+                else if (Brush is HatchBrush hatch)
+                    return new HatchBrushSerializeHelper(hatch);
+                return null;
+            }
+            set//deserialize
+            {
+                Brush = value?.ToBrush();
             }
         }
 
         public Shape() { }
+
         public Shape(Shape ob)
         {
             Bounds = ob.Bounds;
@@ -113,8 +90,22 @@ namespace DrawPrimitives
             Brush = ob.Brush;
         }
 
-        public abstract void DrawStroke(Graphics g);
-        public abstract void DrawFill(Graphics g);
+        public virtual void DrawStroke(Graphics g)
+        {
+            if (!UsePen || Pen != null)
+                return;
+        }
+        public virtual void DrawFill(Graphics g)
+        {
+            if (!UseBrush || Brush == null)
+                return;
+            if (Brush is TextureBrush textureBrush)
+            {
+                var transform = new Matrix();
+                transform.Translate(Bounds.X, Bounds.Y);
+                textureBrush.Transform = transform;
+            }
+        }
 
         public virtual void DrawBounds(Graphics g, Pen pen, Brush? brush)
         {
@@ -133,7 +124,7 @@ namespace DrawPrimitives
         public virtual bool IsHit(Point p)
         {
             var rBounds = Bounds.WithoutNegative();
-            return p.X >= rBounds.X && p.Y >= rBounds.Y && p.X <= (rBounds.X + rBounds.Width) && p.Y <= (rBounds.Y + rBounds.Height);
+            return p.X >= rBounds.X && p.Y >= rBounds.Y && p.X <= rBounds.X + rBounds.Width && p.Y <= rBounds.Y + rBounds.Height;
         }
 
         public Rectangle GetWithoutNegative()
@@ -159,7 +150,7 @@ namespace DrawPrimitives
 
         public override bool Equals(object? obj)
         {
-            if(!(obj is Shape)) return false;
+            if (!(obj is Shape)) return false;
             var ob = (Shape)obj;
             return ob.Bounds == Bounds;
         }

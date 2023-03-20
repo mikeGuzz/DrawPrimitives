@@ -6,8 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms.VisualStyles;
+using DrawPrimitives.Shapes;
 
-namespace DrawPrimitives
+namespace DrawPrimitives.Helpers
 {
     public class TransformHelper : IList<Shape>
     {
@@ -70,13 +71,13 @@ namespace DrawPrimitives
         {
             if (!shapes.Any())
                 throw new InvalidOperationException();
-            if(shapes.Count == 1)
+            if (shapes.Count == 1)
                 return shapes.Single().IsHit(p);
             else
             {
                 var rBounds = CurrentBounds.WithoutNegative();
                 return p.X >= rBounds.X && p.Y >= rBounds.Y &&
-                        p.X <= (rBounds.X + rBounds.Width) && p.Y <= (rBounds.Y + rBounds.Height);
+                        p.X <= rBounds.X + rBounds.Width && p.Y <= rBounds.Y + rBounds.Height;
             }
         }
 
@@ -91,7 +92,7 @@ namespace DrawPrimitives
                 var dX = (double)startBounds[i].X - StartTransformBounds.X;
                 var dY = (double)startBounds[i].Y - StartTransformBounds.Y;
                 shapes[i].Bounds.Size = new Size((int)(startBounds[i].Width * pW), (int)(startBounds[i].Height * pH));
-                shapes[i].Bounds.Location = new Point((int)(newBounds.X + (dX * pW)), (int)(newBounds.Y + (dY * pH)));
+                shapes[i].Bounds.Location = new Point((int)(newBounds.X + dX * pW), (int)(newBounds.Y + dY * pH));
             }
         }
 
@@ -142,7 +143,7 @@ namespace DrawPrimitives
 
         public IEnumerator<Shape> GetEnumerator()
         {
-            return (IEnumerator<Shape>)new TransformHelperEnumerator(shapes.ToArray());
+            return new TransformHelperEnumerator(shapes.ToArray());
         }
 
         public void Add(Shape item)
@@ -199,7 +200,7 @@ namespace DrawPrimitives
         }
 
         public bool MoveNext()
-        { 
+        {
             return ++index < arr.Length;
         }
 

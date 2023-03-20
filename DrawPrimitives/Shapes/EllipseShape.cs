@@ -1,22 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-namespace DrawPrimitives
+namespace DrawPrimitives.Shapes
 {
     public class EllipseShape : Shape
     {
         public EllipseShape() : base() { }
 
-        public EllipseShape(Shape ob) : base(ob) { }
+        public EllipseShape(EllipseShape ob) : base(ob) { }
 
         public EllipseShape(Rectangle bounds) : base()
         {
             Bounds = bounds;
+            Brush = DefaultBrush;
+            Pen = DefaultPen;
         }
 
         public EllipseShape(Pen? pen, Brush? brush) : base()
@@ -34,13 +37,15 @@ namespace DrawPrimitives
 
         public override void DrawStroke(Graphics g)
         {
-            if (Pen != null)
+            base.DrawStroke(g);
+            if(Pen != null)
                 g.DrawEllipse(Pen, Bounds);
         }
 
         public override void DrawFill(Graphics g)
         {
-            if (Brush != null)
+            base.DrawFill(g);
+            if(Brush != null)
                 g.FillEllipse(Brush, Bounds);
         }
     }
