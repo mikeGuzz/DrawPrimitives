@@ -54,8 +54,9 @@ namespace DrawPrimitives.Dialog.SetupDialogs
             InitializeComponent();
 
             Text = text;
-            position_textBox.Text = $"{shape.Bounds.X}, {shape.Bounds.Y}";
-            size_textBox.Text = $"{shape.Bounds.Width}, {shape.Bounds.Height}";
+            var bounds = shape.GetBounds();
+            position_textBox.Text = $"{bounds.X}, {bounds.Y}";
+            size_textBox.Text = $"{bounds.Width}, {bounds.Height}";
             brush = shape.Brush;
             pen = shape.Pen;
             pen_checkBox.Checked = pen != null;
@@ -70,8 +71,9 @@ namespace DrawPrimitives.Dialog.SetupDialogs
 
             Text = text;
             var first = shapes.First();
-            position_textBox.Text = shapes.All(i => i.Bounds.Location == first.Bounds.Location) ? $"{first.Bounds.X}, {first.Bounds.Y}" : string.Empty;
-            size_textBox.Text = shapes.All(i => i.Bounds.Size == first.Bounds.Size) ? $"{first.Bounds.Width}, {first.Bounds.Height}" : string.Empty;
+            var firstBounds = first.GetBounds();
+            position_textBox.Text = shapes.All(i => i.GetBounds().Location == firstBounds.Location) ? $"{firstBounds.X}, {firstBounds.Y}" : string.Empty;
+            size_textBox.Text = shapes.All(i => i.GetBounds().Size == firstBounds.Size) ? $"{firstBounds.Width}, {firstBounds.Height}" : string.Empty;
             brush = shapes.All(i => i.Brush == first.Brush) ? first.Brush : null;
             pen = shapes.All(i => i.Pen == first.Pen) ? first.Pen : null;
             pen_checkBox.CheckState = (pen == null) ? CheckState.Indeterminate : CheckState.Checked;
@@ -109,6 +111,7 @@ namespace DrawPrimitives.Dialog.SetupDialogs
 
         private void pickPen_button_Click(object sender, EventArgs e)
         {
+            //Clipboard.SetData()
             PenDialog dialog;
             if (pen != null)
                 dialog = new PenDialog("Pen setting", pen);

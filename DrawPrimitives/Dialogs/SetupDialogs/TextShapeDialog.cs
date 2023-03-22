@@ -44,9 +44,9 @@ namespace DrawPrimitives.Dialog.SetupDialogs
         {
             InitializeComponent();
 
-            textBox1.Text = shape.Text;
-            textBox1.Font = shape.Font;
-            Text = titleText;
+            //textBox1.Text = shape.Text;
+            //textBox1.Font = shape.Font;
+            //Text = titleText;
         }
 
         private void button1_Click(object sender, EventArgs e)

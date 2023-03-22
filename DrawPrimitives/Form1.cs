@@ -31,7 +31,7 @@ namespace DrawPrimitives
         private string fileName => string.IsNullOrEmpty(filePath) ? "Untitled" : (File.Exists(filePath) ? Path.GetFileNameWithoutExtension(filePath) : "Untitled");
 
         //pens
-        private readonly Pen selectedPen;
+        private readonly Pen selectedPen, selected2Pen;
         private readonly Pen anchorPen;
         private readonly Pen selectedBoundsPen;
 
@@ -99,6 +99,10 @@ namespace DrawPrimitives
             selectedPen.Alignment = PenAlignment.Outset;
             selectedPen.DashStyle = DashStyle.Dash;
             selectedPen.DashPattern = new float[] { 3.5f, 2f };
+
+            selected2Pen = new Pen(Color.White, 1.5f);
+            selected2Pen.Alignment = PenAlignment.Outset;
+
             selectedBoundsPen = new Pen(Color.FromArgb(51, 120, 232), 1.5f);
             selectedBoundsBrush = new SolidBrush(Color.FromArgb(75, 51, 120, 232));
 
@@ -165,12 +169,15 @@ namespace DrawPrimitives
                 ob.DrawFill(g);
                 ob.DrawStroke(g);
                 if (ob.IsSelected)
-                    ob.DrawBounds(g, selectedPen, null);
+                {
+                    ob.DrawBounds(g, selectedPen);
+                }
+                    
             }
 
             if (transformHelper.Any())
             {
-                transformHelper.DrawBounds(g, selectedPen, null);
+                transformHelper.DrawBounds(g, selectedPen);
                 var r = transformHelper.CurrentBounds;
                 foreach (var ob in anchors)
                     ob.Draw(g, r, true);
@@ -221,24 +228,24 @@ namespace DrawPrimitives
                         case ShapeType.Rectangle:
                             shape = new RectangleShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
                             break;
-                        case ShapeType.Ellipse:
-                            shape = new EllipseShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
-                            break;
-                        case ShapeType.TextBox:
-                            shape = new TextBoxShape(rect, Shape.DefaultBrush == null ? new SolidBrush(Color.Black) : Shape.DefaultBrush);
-                            break;
-                        case ShapeType.Diamond:
-                            shape = new DiamondShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
-                            break;
-                        case ShapeType.Pentagon:
-                            shape = new PentagonShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
-                            break;
-                        case ShapeType.Hexagone:
-                            shape = new HexagonShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
-                            break;
-                        case ShapeType.Parallelepiped:
-                            shape = new ParallelepipedShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
-                            break;
+                        //case ShapeType.Ellipse:
+                        //    shape = new EllipseShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
+                        //    break;
+                        //case ShapeType.TextBox:
+                        //    shape = new TextBoxShape(rect, Shape.DefaultBrush == null ? new SolidBrush(Color.Black) : Shape.DefaultBrush);
+                        //    break;
+                        //case ShapeType.Diamond:
+                        //    shape = new DiamondShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
+                        //    break;
+                        //case ShapeType.Pentagon:
+                        //    shape = new PentagonShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
+                        //    break;
+                        //case ShapeType.Hexagone:
+                        //    shape = new HexagonShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
+                        //    break;
+                        //case ShapeType.Parallelepiped:
+                        //    shape = new ParallelepipedShape(rect, drawOutlineToolStripMenuItem.Checked ? Shape.DefaultPen : null, drawFillToolStripMenuItem.Checked ? Shape.DefaultBrush : null);
+                        //    break;
                         default:
                             return;
                     }
@@ -251,7 +258,8 @@ namespace DrawPrimitives
                     foreach (var ob in shapes.Reverse<Shape>())
                     {
                         var p = e.Location;
-                        if (p.X > ob.Bounds.X && p.Y > ob.Bounds.Y && p.X < (ob.Bounds.X + ob.Bounds.Width) && p.Y < (ob.Bounds.Y + ob.Bounds.Height))
+                        var bounds = ob.GetBounds();
+                        if (p.X > bounds.X && p.Y > bounds.Y && p.X < (bounds.X + bounds.Width) && p.Y < (bounds.Y + bounds.Height))
                         {
                             if (controlKeyState)
                             {
@@ -388,7 +396,7 @@ namespace DrawPrimitives
             switch (selectedToolType)
             {
                 case ToolType.DrawShape:
-                    shapes.Last().Bounds = selectedBounds.WithoutNegative();
+                    shapes.Last().Bound(selectedBounds.WithoutNegative());
                     break;
                 case ToolType.Pointer:
                     var normalized = selectedBounds.WithoutNegative();
@@ -396,7 +404,7 @@ namespace DrawPrimitives
                     {
                         foreach (var ob in shapes)
                         {
-                            var r = ob.Bounds;
+                            var r = ob.GetBounds();
                             ob.IsSelected = r.X > normalized.X && r.Y > normalized.Y && (r.X + r.Width) < (normalized.X + normalized.Width) && (r.Y + r.Height) < (normalized.Y + normalized.Height);
                         }
                     }
@@ -616,12 +624,12 @@ namespace DrawPrimitives
                 i = (Shape)i.Clone();
                 if (MousePosition.X > pictureBox1.Location.X && MousePosition.Y > pictureBox1.Location.Y && MousePosition.X < (pictureBox1.Location.X + pictureBox1.Width) && MousePosition.Y < (pictureBox1.Location.Y + pictureBox1.Height))
                 {
-                    i.Bounds.Location = new Point(MousePosition.X + 15, MousePosition.Y + 15);//temp
+                    i.SetPosition(new Point(MousePosition.X + 15, MousePosition.Y + 15));//temp
                 }
                 else
                 {
-                    i.Bounds.X += 15;
-                    i.Bounds.Y += 15;
+                    var r = i.GetBounds();
+                    i.SetPosition(r.X + 15, r.Y + 15);
                 }
                 transformHelper.Add(i);
                 return i;
@@ -716,9 +724,9 @@ namespace DrawPrimitives
             var dialog = new TextShapeDialog("Text setting", shape);
             if(dialog.ShowDialog() == DialogResult.OK)
             {
-                shape.Text = dialog.SelectedText;
-                shape.Font = dialog.SelectedFont;
-                TextBoxShape.DefaultFont = dialog.SelectedFont;
+                //shape.Text = dialog.SelectedText;
+                //shape.Font = dialog.SelectedFont;
+                //TextBoxShape.DefaultFont = dialog.SelectedFont;
             }
             pictureBox1.Invalidate();
         }
@@ -762,9 +770,9 @@ namespace DrawPrimitives
                 foreach(var ob in transformHelper)
                 {
                     if (dialog.IsEditedSize)
-                        ob.Bounds.Size = dialog.ShapeSize;
-                    if(dialog.IsEditedLocation)
-                        ob.Bounds.Location = dialog.ShapeLocation;
+                        ob.SetSize(dialog.ShapeSize);
+                    if (dialog.IsEditedLocation)
+                        ob.SetPosition(dialog.ShapeLocation);
                     if (dialog.IsEditedBrush)
                         ob.Brush = dialog.ShapeBrush;
                     if (dialog.IsEditedPen)

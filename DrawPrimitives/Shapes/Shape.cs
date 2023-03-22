@@ -29,8 +29,6 @@ namespace DrawPrimitives.Shapes
         public static Pen? DefaultPen { get; set; }
         public static Brush? DefaultBrush { get; set; }
 
-        [JsonInclude]
-        public Rectangle Bounds;
         [JsonIgnore]
         [XmlIgnore]
         public Pen? Pen { get; set; }
@@ -81,60 +79,70 @@ namespace DrawPrimitives.Shapes
             }
         }
 
-        public Shape() { }
+        public Shape()
+        {
+            Brush = DefaultBrush;
+            Pen = DefaultPen;
+        }
+
+        public Shape(Pen? pen, Brush? brush)
+        {
+            Brush = brush;
+            Pen = pen;
+        }
 
         public Shape(Shape ob)
         {
-            Bounds = ob.Bounds;
             Pen = ob.Pen;
             Brush = ob.Brush;
+            UseBrush = ob.UseBrush;
+            UsePen = ob.UsePen;
         }
 
-        public virtual void DrawStroke(Graphics g)
-        {
-            if (!UsePen || Pen != null)
-                return;
-        }
-        public virtual void DrawFill(Graphics g)
-        {
-            if (!UseBrush || Brush == null)
-                return;
-            if (Brush is TextureBrush textureBrush)
-            {
-                var transform = new Matrix();
-                transform.Translate(Bounds.X, Bounds.Y);
-                textureBrush.Transform = transform;
-            }
-        }
+        public abstract void DrawStroke(Graphics g);
+        public abstract void DrawFill(Graphics g);
+        public abstract Rectangle GetBounds();
+        public abstract void SetPosition(Point p);
+        public abstract void SetPosition(int x, int y);
+        public abstract void SetSize(Size s);
+        public abstract void SetSize(int w, int h);
+        public abstract void Bound(Rectangle r);
+        public abstract void Bound(int x, int y, int w, int h);
 
-        public virtual void DrawBounds(Graphics g, Pen pen, Brush? brush)
+        //{
+        //    if (!UseBrush || Brush == null)
+        //        return;
+        //    if (Brush is TextureBrush textureBrush)
+        //    {
+        //        var transform = new Matrix();
+        //        transform.Translate(Bounds.X, Bounds.Y);
+        //        textureBrush.Transform = transform;
+        //    }
+        //}
+
+        public virtual void DrawBounds(Graphics g, Pen pen)
         {
-            var bounds = GetWithoutNegative();
-            if (brush != null)
-                g.FillRectangle(brush, bounds);
+            var bounds = GetBounds().WithoutNegative();
             g.DrawRectangle(pen, bounds);
         }
 
-        public void DrawDiagonals(Graphics g, Pen pen)
+        public virtual void FillBounds(Graphics g, Brush brush)
         {
-            g.DrawLine(pen, Bounds.Location, new Point(Bounds.X + Bounds.Width, Bounds.Y + Bounds.Height));
-            g.DrawLine(pen, new Point(Bounds.X + Bounds.Width, Bounds.Y), new Point(Bounds.X, Bounds.Y + Bounds.Height));
+            var bounds = GetBounds().WithoutNegative();
+            g.FillRectangle(brush, bounds);
+        }
+
+        public virtual void DrawDiagonals(Graphics g, Pen pen)
+        {
+            var bounds = GetBounds().WithoutNegative();
+            g.DrawLine(pen, bounds.Location, new Point(bounds.X + bounds.Width, bounds.Y + bounds.Height));
+            g.DrawLine(pen, new Point(bounds.X + bounds.Width, bounds.Y), new Point(bounds.X, bounds.Y + bounds.Height));
         }
 
         public virtual bool IsHit(Point p)
         {
-            var rBounds = Bounds.WithoutNegative();
+            var rBounds = GetBounds().WithoutNegative();
             return p.X >= rBounds.X && p.Y >= rBounds.Y && p.X <= rBounds.X + rBounds.Width && p.Y <= rBounds.Y + rBounds.Height;
-        }
-
-        public Rectangle GetWithoutNegative()
-        {
-            return Bounds.WithoutNegative();
-        }
-
-        public void MakeWithoutNegative()
-        {
-            Bounds = Bounds.WithoutNegative();
         }
 
         public void Dispose()
@@ -151,8 +159,8 @@ namespace DrawPrimitives.Shapes
         public override bool Equals(object? obj)
         {
             if (!(obj is Shape)) return false;
-            var ob = (Shape)obj;
-            return ob.Bounds == Bounds;
+            var shape = (Shape)obj;
+            return shape.GetBounds() == GetBounds() && UsePen == shape.UsePen && UseBrush == shape.UseBrush;
         }
 
         public static bool operator ==(Shape a, Shape b)
@@ -167,7 +175,12 @@ namespace DrawPrimitives.Shapes
 
         public override int GetHashCode()
         {
-            return Bounds.GetHashCode();
+            int hash = UsePen.GetHashCode() ^ UseBrush.GetHashCode();
+            if(Pen != null)
+                hash ^= Pen.GetHashCode();
+            if(Brush != null)
+                hash ^= Brush.GetHashCode();
+            return hash;
         }
     }
 }

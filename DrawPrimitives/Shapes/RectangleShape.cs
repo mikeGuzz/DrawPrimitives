@@ -9,44 +9,28 @@ using System.Threading.Tasks;
 
 namespace DrawPrimitives.Shapes
 {
-    public class RectangleShape : Shape
+    public class RectangleShape : RectangleBasedShape
     {
         public RectangleShape() : base() { }
 
-        public RectangleShape(RectangleShape ob) : base(ob) { }
+        public RectangleShape(RectangleBasedShape ob) : base(ob) { }
 
-        public RectangleShape(Rectangle bounds) : base()
-        {
-            Bounds = bounds;
-            Brush = DefaultBrush;
-            Pen = DefaultPen;
-        }
+        public RectangleShape(Rectangle bounds) : base(bounds) { }
 
-        public RectangleShape(Pen? pen, Brush? brush) : base()
-        {
-            Pen = pen;
-            Brush = brush;
-        }
+        public RectangleShape(Pen? pen, Brush? brush) : base(pen, brush) { }
 
-        public RectangleShape(Rectangle bounds, Pen? pen, Brush? brush) : base()
-        {
-            Bounds = bounds;
-            Pen = pen;
-            Brush = brush;
-        }
+        public RectangleShape(Rectangle bounds, Pen? pen, Brush? brush) : base(bounds, pen, brush) { }
 
         public override void DrawStroke(Graphics g)
         {
-            base.DrawStroke(g);
             if (Pen != null)
-                g.DrawRectangle(Pen, GetWithoutNegative());
+                g.DrawRectangle(Pen, bounds);
         }
 
         public override void DrawFill(Graphics g)
         {
-            base.DrawFill(g);
             if (Brush != null)
-                g.FillRectangle(Brush, GetWithoutNegative());
+                g.FillRectangle(Brush, bounds);
         }
     }
 }

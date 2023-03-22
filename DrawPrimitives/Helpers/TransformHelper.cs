@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,11 +23,13 @@ namespace DrawPrimitives.Helpers
             get
             {
                 if (shapes.Count == 1)
-                    return shapes.Single().Bounds;
+                    return shapes.Single().GetBounds();
                 else if (!shapes.Any())
                     return Rectangle.Empty;
                 else
-                    return Rectangle.FromLTRB(shapes.Min(i => i.Bounds.Left), shapes.Min(i => i.Bounds.Top), shapes.Max(i => i.Bounds.Right), shapes.Max(i => i.Bounds.Bottom));
+                {
+                    return Rectangle.FromLTRB(shapes.Min(i => i.GetBounds().Left), shapes.Min(i => i.GetBounds().Top), shapes.Max(i => i.GetBounds().Right), shapes.Max(i => i.GetBounds().Bottom));
+                } 
             }
         }
 
@@ -48,23 +51,34 @@ namespace DrawPrimitives.Helpers
         public void StartTransform()
         {
             startBounds.Clear();
-            startBounds.AddRange(shapes.Select(i => i.Bounds));
+            startBounds.AddRange(shapes.Select(i => i.GetBounds()));
             StartTransformBounds = CurrentBounds;
         }
 
-        public void DrawBounds(Graphics g, Pen pen, Brush? brush)
+        public void DrawBounds(Graphics g, Pen pen)
         {
             if (!shapes.Any())
                 return;
             if (shapes.Count == 1)
             {
-                shapes.Single().DrawBounds(g, pen, brush);
+                shapes.Single().DrawBounds(g, pen);
                 return;
             }
             var r = CurrentBounds.WithoutNegative();
-            if (brush != null)
-                g.FillRectangle(brush, r);
             g.DrawRectangle(pen, r);
+        }
+
+        public void FillBounds(Graphics g, Brush brush)
+        {
+            if (!shapes.Any())
+                return;
+            if (shapes.Count == 1)
+            {
+                shapes.Single().FillBounds(g, brush);
+                return;
+            }
+            var r = CurrentBounds.WithoutNegative();
+            g.FillRectangle(brush, r);
         }
 
         public bool IsHit(Point p)
@@ -91,8 +105,13 @@ namespace DrawPrimitives.Helpers
             {
                 var dX = (double)startBounds[i].X - StartTransformBounds.X;
                 var dY = (double)startBounds[i].Y - StartTransformBounds.Y;
-                shapes[i].Bounds.Size = new Size((int)(startBounds[i].Width * pW), (int)(startBounds[i].Height * pH));
-                shapes[i].Bounds.Location = new Point((int)(newBounds.X + dX * pW), (int)(newBounds.Y + dY * pH));
+                using(var t = new Matrix())
+                {
+                    t.Translate((float)(newBounds.X + dX * pW), (float)(newBounds.Y + dY * pH));
+                    t.Scale((float)(newBounds.X + dX * pW), (float)(newBounds.Y + dY * pH));
+                    shapes[i].SetPosition(new Point((int)(newBounds.X + dX * pW), (int)(newBounds.Y + dY * pH)));
+                    shapes[i].SetSize(new Size((int)(startBounds[i].Width * pW), (int)(startBounds[i].Height * pH)));
+                }
             }
         }
 
@@ -102,7 +121,7 @@ namespace DrawPrimitives.Helpers
                 StartTransform();
             for (int i = 0; i < startBounds.Count; i++)
             {
-                shapes[i].Bounds.Location = new Point(startBounds[i].X + n.X, startBounds[i].Y + n.Y);
+                shapes[i].SetPosition(new Point(startBounds[i].X + n.X, startBounds[i].Y + n.Y));
             }
         }
 
@@ -112,7 +131,7 @@ namespace DrawPrimitives.Helpers
                 StartTransform();
             for (int i = 0; i < startBounds.Count; i++)
             {
-                shapes[i].Bounds.Size = startBounds[i].Size + n;
+                shapes[i].SetSize(startBounds[i].Size + n);
             }
         }
 
