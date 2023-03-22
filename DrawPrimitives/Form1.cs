@@ -31,7 +31,7 @@ namespace DrawPrimitives
         private string fileName => string.IsNullOrEmpty(filePath) ? "Untitled" : (File.Exists(filePath) ? Path.GetFileNameWithoutExtension(filePath) : "Untitled");
 
         //pens
-        private readonly Pen selectedPen, selected2Pen;
+        private readonly Pen selectedPen;
         private readonly Pen anchorPen;
         private readonly Pen selectedBoundsPen;
 
@@ -100,9 +100,6 @@ namespace DrawPrimitives
             selectedPen.DashStyle = DashStyle.Dash;
             selectedPen.DashPattern = new float[] { 3.5f, 2f };
 
-            selected2Pen = new Pen(Color.White, 1.5f);
-            selected2Pen.Alignment = PenAlignment.Outset;
-
             selectedBoundsPen = new Pen(Color.FromArgb(51, 120, 232), 1.5f);
             selectedBoundsBrush = new SolidBrush(Color.FromArgb(75, 51, 120, 232));
 
@@ -169,10 +166,7 @@ namespace DrawPrimitives
                 ob.DrawFill(g);
                 ob.DrawStroke(g);
                 if (ob.IsSelected)
-                {
                     ob.DrawBounds(g, selectedPen);
-                }
-                    
             }
 
             if (transformHelper.Any())
