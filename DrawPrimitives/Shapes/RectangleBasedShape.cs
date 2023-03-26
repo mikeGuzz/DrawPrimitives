@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -35,14 +36,14 @@ namespace DrawPrimitives.Shapes
             return bounds;
         }
 
+        public override void Bound(int x, int y, int w, int h)
+        {
+            Bound(new Rectangle(x, y, w, h));
+        }
+
         public override void Bound(Rectangle r)
         {
             bounds = r;
-        }
-
-        public override void Bound(int x, int y, int w, int h)
-        {
-            bounds = new Rectangle(x, y, w, h);
         }
 
         public override void SetPosition(Point p)
@@ -52,7 +53,7 @@ namespace DrawPrimitives.Shapes
 
         public override void SetPosition(int x, int y)
         {
-            bounds.Location = new Point(x, y);
+            SetPosition(new Point(x, y));
         }
 
         public override void SetSize(Size s)
@@ -62,7 +63,7 @@ namespace DrawPrimitives.Shapes
 
         public override void SetSize(int w, int h)
         {
-            bounds.Size = new Size(w, h);
+            SetSize(new Size(w, h));
         }
     }
 }

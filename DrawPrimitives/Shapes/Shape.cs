@@ -24,7 +24,7 @@ namespace DrawPrimitives.Shapes
     [Serializable]
     [XmlInclude(typeof(EllipseShape))]
     [XmlInclude(typeof(RectangleShape))]
-    public abstract class Shape : IDisposable, ICloneable
+    public abstract class Shape : IDisposable, ICloneable, IDrawable
     {
         public static Pen? DefaultPen { get; set; }
         public static Brush? DefaultBrush { get; set; }
@@ -101,13 +101,21 @@ namespace DrawPrimitives.Shapes
 
         public abstract void DrawStroke(Graphics g);
         public abstract void DrawFill(Graphics g);
+        public abstract void DrawStroke(Graphics g, Point offset, SizeF scale);
+        public abstract void DrawFill(Graphics g, Point offset, SizeF scale);
         public abstract Rectangle GetBounds();
+        public virtual Rectangle GetBounds(Point offset, SizeF scale)
+        {
+            var r = GetBounds();
+            return new Rectangle((int)((r.X * scale.Width) + offset.X), (int)((r.Y * scale.Height) + offset.Y), (int)(r.Width * scale.Width), (int)(r.Height * scale.Height));
+        }
         public abstract void SetPosition(Point p);
         public abstract void SetPosition(int x, int y);
         public abstract void SetSize(Size s);
         public abstract void SetSize(int w, int h);
         public abstract void Bound(Rectangle r);
         public abstract void Bound(int x, int y, int w, int h);
+
 
         //{
         //    if (!UseBrush || Brush == null)
@@ -120,28 +128,15 @@ namespace DrawPrimitives.Shapes
         //    }
         //}
 
-        public virtual void DrawBounds(Graphics g, Pen pen)
-        {
-            var bounds = GetBounds().WithoutNegative();
-            g.DrawRectangle(pen, bounds);
-        }
-
-        public virtual void FillBounds(Graphics g, Brush brush)
-        {
-            var bounds = GetBounds().WithoutNegative();
-            g.FillRectangle(brush, bounds);
-        }
-
-        public virtual void DrawDiagonals(Graphics g, Pen pen)
-        {
-            var bounds = GetBounds().WithoutNegative();
-            g.DrawLine(pen, bounds.Location, new Point(bounds.X + bounds.Width, bounds.Y + bounds.Height));
-            g.DrawLine(pen, new Point(bounds.X + bounds.Width, bounds.Y), new Point(bounds.X, bounds.Y + bounds.Height));
-        }
-
         public virtual bool IsHit(Point p)
         {
             var rBounds = GetBounds().WithoutNegative();
+            return p.X >= rBounds.X && p.Y >= rBounds.Y && p.X <= rBounds.X + rBounds.Width && p.Y <= rBounds.Y + rBounds.Height;
+        }
+
+        public virtual bool IsHit(Point p, Point offset, SizeF scale)
+        {
+            var rBounds = GetBounds(offset, scale).WithoutNegative();
             return p.X >= rBounds.X && p.Y >= rBounds.Y && p.X <= rBounds.X + rBounds.Width && p.Y <= rBounds.Y + rBounds.Height;
         }
 

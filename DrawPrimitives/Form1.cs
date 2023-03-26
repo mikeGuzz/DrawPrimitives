@@ -40,6 +40,14 @@ namespace DrawPrimitives
         private readonly SolidBrush selectedBoundsBrush;
 
         //select
+        private Rectangle realSelectedBounds
+        {
+            get
+            {
+                var wN = selectedBounds;//.WithoutNegative();
+                return new Rectangle((int)(wN.X / canvas.Zoom) - canvas.OffsetX, (int)(wN.Y / canvas.Zoom) - canvas.OffsetY, (int)(wN.Width / canvas.Zoom), (int)(wN.Height / canvas.Zoom));
+            }
+        }
         private Rectangle selectedBounds;
 
         //transform
@@ -64,8 +72,7 @@ namespace DrawPrimitives
         private List<Shape> buffer = new List<Shape>();
 
         //offset
-        private Size clientBoundsSize => new Size(ClientRectangle.X + ClientRectangle.Width - vScrollBar1.Width, ClientRectangle.Height - menuStrip1.Height - hScrollBar1.Height - statusStrip1.Height);
-        private readonly Point startOffsetPoint;
+        //private Size clientBoundsSize => new Size(ClientRectangle.X + ClientRectangle.Width - vScrollBar1.Width, ClientRectangle.Height - menuStrip1.Height - hScrollBar1.Height - statusStrip1.Height);
 
         //undo/redo
         private UndoRedoHelper<string> undoRedoHelper;
@@ -81,15 +88,12 @@ namespace DrawPrimitives
             {
                 IncludeFields = true,
             };
-
-            startOffsetPoint = new Point(pictureBox1.Location.X + 10, pictureBox1.Location.Y + 10);
-
-            hScrollBar1.Value = 0;
-            vScrollBar1.Value = 0;
             UpdateScrollBars();
             UpdatePictureBoxLocation();
 
-            canvas = new Canvas(pictureBox1.Size, pictureBox1.BackColor); 
+            canvas = new Canvas(new Size(400, 180));
+            canvas.OffsetX = 30;
+            canvas.OffsetY = 15;
 
             //check on save
             Shape.DefaultPen = new Pen(Color.Black, 4);
@@ -118,7 +122,7 @@ namespace DrawPrimitives
                     new ShapeAnchor(anchorSize, AnchorPosition.RightTop, anchorPen, anchorBrush, AnchorShape.Rectangle),
                     new ShapeAnchor(anchorSize, AnchorPosition.RightBottom, anchorPen, anchorBrush, AnchorShape.Rectangle),
             };
-            transformHelper = new TransformHelper();
+            transformHelper = new TransformHelper(selectedPen, null);
             undoRedoHelper = new UndoRedoHelper<string>();
 
             this.Text = GetTitle();
@@ -160,27 +164,46 @@ namespace DrawPrimitives
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
+            var docR = canvas.GetFileBounds(pictureBox1.ClientRectangle, true, true);
+            var zoom = new SizeF((float)canvas.Zoom, (float)canvas.Zoom);
 
-            foreach (var ob in shapes)
+            //fill document bounds
+            g.FillRectangle(new SolidBrush(canvas.BackColor), docR);
+            using (var t = new Matrix())
             {
-                ob.DrawFill(g);
-                ob.DrawStroke(g);
-                if (ob.IsSelected)
-                    ob.DrawBounds(g, selectedPen);
+                t.Scale((float)canvas.Zoom, (float)canvas.Zoom);
+                t.Translate((float)(canvas.OffsetX / canvas.Zoom), (float)(canvas.OffsetY / canvas.Zoom));
+                g.Transform = t;
+                foreach (var ob in shapes)
+                {
+                    ob.DrawFill(g);//, new Point(-canvas.OffsetX, -canvas.OffsetY), new SizeF(1, 1));
+                    ob.DrawStroke(g);//, canvas.Offset, new SizeF(1, 1));
+                }
+                g.ResetTransform();
             }
+
+            //draw document bounds
+            g.DrawRectangle(Pens.Black, docR);
+
+            shapes.ForEach(i =>
+            {
+                if (i.IsSelected)
+                    g.DrawRectangle(selectedPen, i.GetBounds(canvas.Offset, zoom).WithoutNegative());
+            });
 
             if (transformHelper.Any())
             {
-                transformHelper.DrawBounds(g, selectedPen);
-                var r = transformHelper.CurrentBounds;
+                transformHelper.DrawStroke(g, canvas.Offset, zoom);
+                var r = transformHelper.GetBounds(canvas.Offset, zoom);
                 foreach (var ob in anchors)
                     ob.Draw(g, r, true);
             }
 
             if (mouseDown && (Math.Abs(selectedBounds.Width) > 1 || Math.Abs(selectedBounds.Height) > 1) && selectedToolType == ToolType.Pointer && transformState == TransformState.None)
             {
-                g.FillRectangle(selectedBoundsBrush, selectedBounds.WithoutNegative());
-                g.DrawRectangle(selectedBoundsPen, selectedBounds.WithoutNegative());
+                var bounds = selectedBounds.WithoutNegative();
+                g.FillRectangle(selectedBoundsBrush, bounds);
+                g.DrawRectangle(selectedBoundsPen, bounds);
             }
         }
 
@@ -202,7 +225,7 @@ namespace DrawPrimitives
                     selectedAnchorPos = pos;
                     return;
                 }
-                if (transformHelper.IsHit(e.Location))
+                if (transformHelper.IsHit(e.Location, canvas.Offset, canvas.SZoom))
                 {
                     transformHelper.StartTransform();
                     transformState = TransformState.Move;
@@ -216,7 +239,7 @@ namespace DrawPrimitives
                 case ToolType.DrawShape:
                     transformHelper.Clear();
                     Shape shape;
-                    var rect = new Rectangle(e.Location, Size.Empty);
+                    var rect = new Rectangle(new Point(e.Location.X - canvas.OffsetX, e.Location.Y - canvas.OffsetY), Size.Empty);
                     switch (selectedShapeType)
                     {
                         case ShapeType.Rectangle:
@@ -251,9 +274,7 @@ namespace DrawPrimitives
                         transformHelper.Clear();
                     foreach (var ob in shapes.Reverse<Shape>())
                     {
-                        var p = e.Location;
-                        var bounds = ob.GetBounds();
-                        if (p.X > bounds.X && p.Y > bounds.Y && p.X < (bounds.X + bounds.Width) && p.Y < (bounds.Y + bounds.Height))
+                        if(ob.IsHit(e.Location, canvas.Offset, canvas.SZoom))
                         {
                             if (controlKeyState)
                             {
@@ -280,7 +301,7 @@ namespace DrawPrimitives
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
             mousePos_toolStripStatusLabel.Text = $"{e.X}, {e.Y}px";
-            ;
+
             if (transformHelper.Any() && transformState == TransformState.None)
             {
                 if (IsHitAnyAnchor(e.Location, out var pos))
@@ -288,33 +309,33 @@ namespace DrawPrimitives
                     switch (pos)
                     {
                         case AnchorPosition.RightBottom:
-                            pictureBox1.Cursor = Cursors.SizeNWSE;
+                            Cursor = Cursors.SizeNWSE;
                             break;
                         case AnchorPosition.LeftBottom:
-                            pictureBox1.Cursor = Cursors.SizeNESW;
+                            Cursor = Cursors.SizeNESW;
                             break;
                         case AnchorPosition.LeftTop:
-                            pictureBox1.Cursor = Cursors.SizeNWSE;
+                            Cursor = Cursors.SizeNWSE;
                             break;
                         case AnchorPosition.Left:
-                            pictureBox1.Cursor = Cursors.SizeWE;
+                            Cursor = Cursors.SizeWE;
                             break;
                         case AnchorPosition.RightTop:
-                            pictureBox1.Cursor = Cursors.SizeNESW;
+                            Cursor = Cursors.SizeNESW;
                             break;
                         case AnchorPosition.Right:
-                            pictureBox1.Cursor = Cursors.SizeWE;
+                            Cursor = Cursors.SizeWE;
                             break;
                         case AnchorPosition.Top:
-                            pictureBox1.Cursor = Cursors.SizeNS;
+                            Cursor = Cursors.SizeNS;
                             break;
                         case AnchorPosition.Bottom:
-                            pictureBox1.Cursor = Cursors.SizeNS;
+                            Cursor = Cursors.SizeNS;
                             break;
                     }
                 }
-                else if (transformHelper.IsHit(e.Location))
-                    pictureBox1.Cursor = Cursors.SizeAll;
+                else if (transformHelper.IsHit(e.Location, new Point(canvas.OffsetX, canvas.OffsetY), new SizeF((float)canvas.Zoom, (float)canvas.Zoom)))
+                    Cursor = Cursors.SizeAll;
                 else
                     ResetCursor();
             }
@@ -326,43 +347,44 @@ namespace DrawPrimitives
 
             if (transformState != TransformState.None && transformHelper.Any())
             {
+                var realR = realSelectedBounds;
                 switch (transformState)
                 {
                     case TransformState.Move:
-                        transformHelper.TransformPosition(new Point(selectedBounds.Size));
+                        transformHelper.SetPosition(new Point(realR.Size));
                         break;
                     case TransformState.Scale:
                         Rectangle increase = Rectangle.Empty;
                         switch (selectedAnchorPos)
                         {
                             case AnchorPosition.RightBottom:
-                                increase.Size = new Size(selectedBounds.Width, selectedBounds.Height);
+                                increase.Size = new Size(realR.Width, realR.Height);
                                 break;
                             case AnchorPosition.LeftBottom:
-                                increase.Size = new Size(-selectedBounds.Width, selectedBounds.Height);
-                                increase.Location = new Point(selectedBounds.Width, 0);
+                                increase.Size = new Size(-realR.Width, realR.Height);
+                                increase.Location = new Point(realR.Width, 0);
                                 break;
                             case AnchorPosition.LeftTop:
-                                increase.Size = new Size(-selectedBounds.Width, -selectedBounds.Height);
-                                increase.Location = new Point(selectedBounds.Width, selectedBounds.Height);
+                                increase.Size = new Size(-realR.Width, -realR.Height);
+                                increase.Location = new Point(realR.Width, realR.Height);
                                 break;
                             case AnchorPosition.Left:
-                                increase.Size = new Size(-selectedBounds.Width, 0);
-                                increase.Location = new Point(selectedBounds.Width, 0);
+                                increase.Size = new Size(-realR.Width, 0);
+                                increase.Location = new Point(realR.Width, 0);
                                 break;
                             case AnchorPosition.RightTop:
-                                increase.Size = new Size(selectedBounds.Width, -selectedBounds.Height);
-                                increase.Location = new Point(0, selectedBounds.Height);
+                                increase.Size = new Size(realR.Width, -realR.Height);
+                                increase.Location = new Point(0, realR.Height);
                                 break;
                             case AnchorPosition.Right:
-                                increase.Size = new Size(selectedBounds.Width, 0);
+                                increase.Size = new Size(realR.Width, 0);
                                 break;
                             case AnchorPosition.Top:
-                                increase.Size = new Size(0, -selectedBounds.Height);
-                                increase.Location = new Point(0, selectedBounds.Height);
+                                increase.Size = new Size(0, -realR.Height);
+                                increase.Location = new Point(0, realR.Height);
                                 break;
                             case AnchorPosition.Bottom:
-                                increase.Size = new Size(0, selectedBounds.Height);
+                                increase.Size = new Size(0, realR.Height);
                                 break;
                         }
                         var tempBounds = new Rectangle(new Point(increase.Location.X + transformHelper.StartTransformBounds.Location.X, increase.Location.Y + transformHelper.StartTransformBounds.Location.Y), increase.Size + transformHelper.StartTransformBounds.Size);
@@ -390,7 +412,8 @@ namespace DrawPrimitives
             switch (selectedToolType)
             {
                 case ToolType.DrawShape:
-                    shapes.Last().Bound(selectedBounds.WithoutNegative());
+                    shapes.Last().SetSize(realSelectedBounds.Size);
+                    this.Text = shapes.Last().GetBounds().ToString();
                     break;
                 case ToolType.Pointer:
                     var normalized = selectedBounds.WithoutNegative();
@@ -398,7 +421,7 @@ namespace DrawPrimitives
                     {
                         foreach (var ob in shapes)
                         {
-                            var r = ob.GetBounds();
+                            var r = ob.GetBounds(canvas.Offset, canvas.SZoom);
                             ob.IsSelected = r.X > normalized.X && r.Y > normalized.Y && (r.X + r.Width) < (normalized.X + normalized.Width) && (r.Y + r.Height) < (normalized.Y + normalized.Height);
                         }
                     }
@@ -428,6 +451,7 @@ namespace DrawPrimitives
                     else
                     {
                         shapes.Last().IsSelected = false;
+                        shapes.Last().Bound(realSelectedBounds.WithoutNegative());
                         transformHelper.Add(shapes.Last());
 
                         if (shapes.Last() is TextBoxShape)
@@ -439,7 +463,7 @@ namespace DrawPrimitives
                     break;
                 case ToolType.Pointer:
                     var normalized = selectedBounds.WithoutNegative();
-                    if ((normalized.Width > 1 || normalized.Height > 1))
+                    if (normalized.Width > 1 || normalized.Height > 1)
                     {
                         transformHelper.Clear();
                         transformHelper.AddRange(shapes.Where(i =>
@@ -464,7 +488,7 @@ namespace DrawPrimitives
                 return false;
             foreach (var ob in anchors)
             {
-                var anchorBounds = ob.GetBounds(transformHelper.CurrentBounds);
+                var anchorBounds = ob.GetBounds(transformHelper.GetBounds(new Point(canvas.OffsetX, canvas.OffsetY), new SizeF((float)canvas.Zoom, (float)canvas.Zoom)));
                 if (mousePos.X >= anchorBounds.X && mousePos.Y >= anchorBounds.Y &&
                     mousePos.X <= (anchorBounds.X + anchorBounds.Width) && mousePos.Y <= (anchorBounds.Y + anchorBounds.Height))
                 {
@@ -480,10 +504,10 @@ namespace DrawPrimitives
             switch (selectedToolType)
             {
                 case ToolType.DrawShape:
-                    pictureBox1.Cursor = Cursors.Cross;
+                    Cursor = Cursors.Cross;
                     break;
                 case ToolType.Pointer:
-                    pictureBox1.Cursor = Cursors.Default;
+                    Cursor = Cursors.Default;
                     break;
             }
         }
@@ -616,15 +640,15 @@ namespace DrawPrimitives
             shapes.AddRange(buffer.Select(i =>
             {
                 i = (Shape)i.Clone();
-                if (MousePosition.X > pictureBox1.Location.X && MousePosition.Y > pictureBox1.Location.Y && MousePosition.X < (pictureBox1.Location.X + pictureBox1.Width) && MousePosition.Y < (pictureBox1.Location.Y + pictureBox1.Height))
-                {
-                    i.SetPosition(new Point(MousePosition.X + 15, MousePosition.Y + 15));//temp
-                }
-                else
-                {
-                    var r = i.GetBounds();
-                    i.SetPosition(r.X + 15, r.Y + 15);
-                }
+                //if (MousePosition.X > pictureBox1.Location.X && MousePosition.Y > pictureBox1.Location.Y && MousePosition.X < (pictureBox1.Location.X + pictureBox1.Width) && MousePosition.Y < (pictureBox1.Location.Y + pictureBox1.Height))
+                //{
+                //    i.SetPosition(new Point(MousePosition.X + 15, MousePosition.Y + 15));//temp
+                //}
+                //else
+                //{
+                //    var r = i.GetBounds();
+                //    i.SetPosition(r.X + 15, r.Y + 15);
+                //}
                 transformHelper.Add(i);
                 return i;
             }));
@@ -909,18 +933,18 @@ namespace DrawPrimitives
 
         private Bitmap GetBitmap(bool dispose)
         {
-            Bitmap map = new Bitmap(pictureBox1.Width, pictureBox1.Height);
-            using (var g = Graphics.FromImage(map))
-            {
-                g.Clear(pictureBox1.BackColor);
-                if(pictureBox1.Image != null)
-                    g.DrawImage(pictureBox1.Image, Point.Empty);
-                foreach (var ob in shapes)
-                {
-                    ob.DrawFill(g);
-                    ob.DrawStroke(g);
-                }
-            }
+            Bitmap map = new Bitmap(10, 10);//(pictureBox1.Width, pictureBox1.Height);
+            //using (var g = Graphics.FromImage(map))
+            //{
+            //    g.Clear(pictureBox1.BackColor);
+            //    if(pictureBox1.Image != null)
+            //        g.DrawImage(pictureBox1.Image, Point.Empty);
+            //    foreach (var ob in shapes)
+            //    {
+            //        ob.DrawFill(g);
+            //        ob.DrawStroke(g);
+            //    }
+            //}
             if (dispose)
                 map.Dispose();
             return map;
@@ -1122,27 +1146,27 @@ namespace DrawPrimitives
 
         private void UpdatePictureBoxLocation()
         {
-            pictureBox1.Location = new Point(startOffsetPoint.X - hScrollBar1.Value, startOffsetPoint.Y - vScrollBar1.Value);
+            //pictureBox1.Location = new Point(startOffsetPoint.X - hScrollBar1.Value, startOffsetPoint.Y - vScrollBar1.Value);
         }
 
         private void UpdateScrollBars()
         {
-            var size = clientBoundsSize;
-            var diffX = (pictureBox1.Location.X + pictureBox1.Size.Width) - (size.Width + startOffsetPoint.X) + vScrollBar1.Width;
-            var diffY = (pictureBox1.Location.Y + pictureBox1.Size.Height) - (size.Height + startOffsetPoint.Y) + hScrollBar1.Height;
+            //var size = clientBoundsSize;
+            //var diffX = (pictureBox1.Location.X + pictureBox1.Size.Width) - (size.Width + startOffsetPoint.X) + vScrollBar1.Width;
+            //var diffY = (pictureBox1.Location.Y + pictureBox1.Size.Height) - (size.Height + startOffsetPoint.Y) + hScrollBar1.Height;
 
-            hScrollBar1.Enabled = !(pictureBox1.Location.X >= startOffsetPoint.X && diffX <= 0);
-            if(hScrollBar1.Enabled)
-            {
-                hScrollBar1.Maximum = diffX + (hScrollBar1.LargeChange - 1);
-                hScrollBar1.Minimum = 0;
-            }
-            vScrollBar1.Enabled = !(pictureBox1.Location.Y >= startOffsetPoint.Y && diffY <= 0);
-            if(vScrollBar1.Enabled)
-            {
-                vScrollBar1.Maximum = diffY + (vScrollBar1.LargeChange - 1);
-                vScrollBar1.Minimum = 0;
-            }
+            //hScrollBar1.Enabled = !(pictureBox1.Location.X >= startOffsetPoint.X && diffX <= 0);
+            //if(hScrollBar1.Enabled)
+            //{
+            //    hScrollBar1.Maximum = diffX + (hScrollBar1.LargeChange - 1);
+            //    hScrollBar1.Minimum = 0;
+            //}
+            //vScrollBar1.Enabled = !(pictureBox1.Location.Y >= startOffsetPoint.Y && diffY <= 0);
+            //if(vScrollBar1.Enabled)
+            //{
+            //    vScrollBar1.Maximum = diffY + (vScrollBar1.LargeChange - 1);
+            //    vScrollBar1.Minimum = 0;
+            //}
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)
@@ -1192,6 +1216,11 @@ namespace DrawPrimitives
         {
             undoToolStripMenuItem.Enabled = undoRedoHelper.CanUndo();
             redoToolStripMenuItem.Enabled = undoRedoHelper.CanRedo();
+        }
+
+        private void trackBar1_Scroll(object sender, EventArgs e)
+        {
+            pictureBox1.Invalidate();
         }
     }
 }

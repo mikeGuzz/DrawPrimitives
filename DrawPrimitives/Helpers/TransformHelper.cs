@@ -2,8 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms.VisualStyles;
@@ -11,27 +13,14 @@ using DrawPrimitives.Shapes;
 
 namespace DrawPrimitives.Helpers
 {
-    public class TransformHelper : IList<Shape>
+    public class TransformHelper : IList<Shape>, IDrawable
     {
         private List<Rectangle> startBounds = new List<Rectangle>();
         private List<Shape> shapes = new List<Shape>();
 
         public Rectangle StartTransformBounds { get; private set; }
-
-        public Rectangle CurrentBounds
-        {
-            get
-            {
-                if (shapes.Count == 1)
-                    return shapes.Single().GetBounds();
-                else if (!shapes.Any())
-                    return Rectangle.Empty;
-                else
-                {
-                    return Rectangle.FromLTRB(shapes.Min(i => i.GetBounds().Left), shapes.Min(i => i.GetBounds().Top), shapes.Max(i => i.GetBounds().Right), shapes.Max(i => i.GetBounds().Bottom));
-                } 
-            }
-        }
+        public Pen? Pen { get; set; }
+        public Brush? Brush { get; set; }
 
         public int Count => shapes.Count;
 
@@ -43,6 +32,22 @@ namespace DrawPrimitives.Helpers
             set => shapes[index] = value;
         }
 
+        public TransformHelper(Pen pen)
+        {
+            Pen = pen;
+        }
+
+        public TransformHelper(Brush brush)
+        {
+            Brush = brush;
+        }
+
+        public TransformHelper(Pen? pen, Brush? brush)
+        {
+            Pen = pen;
+            Brush = brush;
+        }
+
         public TransformHelper(params Shape[] shapes)
         {
             this.shapes.AddRange(shapes);
@@ -52,86 +57,159 @@ namespace DrawPrimitives.Helpers
         {
             startBounds.Clear();
             startBounds.AddRange(shapes.Select(i => i.GetBounds()));
-            StartTransformBounds = CurrentBounds;
+            StartTransformBounds = GetBounds();
         }
 
-        public void DrawBounds(Graphics g, Pen pen)
+        public void StartTransform(Point offset, SizeF scale)
         {
-            if (!shapes.Any())
+            startBounds.Clear();
+            startBounds.AddRange(shapes.Select(i => i.GetBounds(offset, scale)));
+            StartTransformBounds = GetBounds(offset, scale);
+        }
+
+        public void DrawStroke(Graphics g)
+        {
+            if (!shapes.Any() || Pen == null)
                 return;
             if (shapes.Count == 1)
             {
-                shapes.Single().DrawBounds(g, pen);
+                g.DrawRectangle(Pen, shapes.Single().GetBounds().WithoutNegative());
                 return;
             }
-            var r = CurrentBounds.WithoutNegative();
-            g.DrawRectangle(pen, r);
+            g.DrawRectangle(Pen, GetBounds().WithoutNegative());
         }
 
-        public void FillBounds(Graphics g, Brush brush)
+        public void DrawStroke(Graphics g, Point offset, SizeF scale)
         {
-            if (!shapes.Any())
+            if (!shapes.Any() || Pen == null)
                 return;
             if (shapes.Count == 1)
             {
-                shapes.Single().FillBounds(g, brush);
+                g.DrawRectangle(Pen, shapes.Single().GetBounds(offset, scale).WithoutNegative());
                 return;
             }
-            var r = CurrentBounds.WithoutNegative();
-            g.FillRectangle(brush, r);
+            g.DrawRectangle(Pen, GetBounds(offset, scale).WithoutNegative());
+        }
+
+        public void DrawFill(Graphics g)
+        {
+            if (!shapes.Any() || Brush == null)
+                return;
+            if (shapes.Count == 1)
+            {
+                g.FillRectangle(Brush, shapes.Single().GetBounds().WithoutNegative());
+                return;
+            }
+            g.FillRectangle(Brush, GetBounds().WithoutNegative());
+        }
+
+        public void DrawFill(Graphics g, Point offset, SizeF scale)
+        {
+            if (!shapes.Any() || Brush == null)
+                return;
+            if (shapes.Count == 1)
+            {
+                g.FillRectangle(Brush, shapes.Single().GetBounds(offset, scale).WithoutNegative());
+                return;
+            }
+            g.FillRectangle(Brush, GetBounds(offset, scale).WithoutNegative());
+        }
+
+        public Rectangle GetBounds()
+        {
+            if (shapes.Count == 1)
+                return shapes.Single().GetBounds();
+            else if (!shapes.Any())
+                return Rectangle.Empty;
+            else
+                return Rectangle.FromLTRB(shapes.Min(i => i.GetBounds().Left), shapes.Min(i => i.GetBounds().Top), shapes.Max(i => i.GetBounds().Right), shapes.Max(i => i.GetBounds().Bottom));
+        }
+
+        public Rectangle GetBounds(Point offset, SizeF scale)
+        {
+            if (shapes.Count == 1)
+                return shapes.Single().GetBounds(offset, scale);
+            else if (!shapes.Any())
+                return Rectangle.Empty;
+            else
+                return Rectangle.FromLTRB(shapes.Min(i => i.GetBounds(offset, scale).Left), shapes.Min(i => i.GetBounds(offset, scale).Top), shapes.Max(i => i.GetBounds(offset, scale).Right), shapes.Max(i => i.GetBounds(offset, scale).Bottom));
+        }
+
+        public void SetPosition(Point p)
+        {
+            if (startBounds.Count != shapes.Count)
+                StartTransform();
+            for (int i = 0; i < startBounds.Count; i++)
+            {
+                shapes[i].SetPosition(new Point(startBounds[i].X + p.X, startBounds[i].Y + p.Y));
+            }
+        }
+
+        public void SetPosition(int x, int y)
+        {
+            SetPosition(new Point(x, y));
+        }
+
+        public void SetSize(Size s)
+        {
+            if (startBounds.Count != shapes.Count)
+                StartTransform();
+            for (int i = 0; i < startBounds.Count; i++)
+            {
+                shapes[i].SetSize(startBounds[i].Size + s);
+            }
+        }
+
+        public void SetSize(int w, int h)
+        {
+            SetSize(new Size(w, h));
+        }
+
+        public void Bound(Rectangle r)
+        {
+            if (startBounds.Count != shapes.Count)
+                StartTransform();
+            var pW = r.Width / (double)StartTransformBounds.Width;
+            var pH = r.Height / (double)StartTransformBounds.Height;
+            for (int i = 0; i < startBounds.Count; i++)
+            {
+                var dX = (double)startBounds[i].X - StartTransformBounds.X;
+                var dY = (double)startBounds[i].Y - StartTransformBounds.Y;
+                shapes[i].SetPosition(new Point((int)(r.X + dX * pW), (int)(r.Y + dY * pH)));
+                shapes[i].SetSize(new Size((int)(startBounds[i].Width * pW), (int)(startBounds[i].Height * pH)));
+            }
+        }
+
+        public void Bound(int x, int y, int w, int h)
+        {
+            Bound(new Rectangle(x, y, w, h));
         }
 
         public bool IsHit(Point p)
         {
             if (!shapes.Any())
-                throw new InvalidOperationException();
+                return false;
             if (shapes.Count == 1)
                 return shapes.Single().IsHit(p);
             else
             {
-                var rBounds = CurrentBounds.WithoutNegative();
+                var rBounds = GetBounds().WithoutNegative();
                 return p.X >= rBounds.X && p.Y >= rBounds.Y &&
                         p.X <= rBounds.X + rBounds.Width && p.Y <= rBounds.Y + rBounds.Height;
             }
         }
 
-        public void Bound(Rectangle newBounds)
+        public bool IsHit(Point p, Point offset, SizeF scale)
         {
-            if (startBounds.Count != shapes.Count)
-                StartTransform();
-            var pW = newBounds.Width / (double)StartTransformBounds.Width;
-            var pH = newBounds.Height / (double)StartTransformBounds.Height;
-            for (int i = 0; i < startBounds.Count; i++)
+            if (!shapes.Any())
+                return false;
+            if (shapes.Count == 1)
+                return shapes.Single().IsHit(p, offset, scale);
+            else
             {
-                var dX = (double)startBounds[i].X - StartTransformBounds.X;
-                var dY = (double)startBounds[i].Y - StartTransformBounds.Y;
-                using(var t = new Matrix())
-                {
-                    t.Translate((float)(newBounds.X + dX * pW), (float)(newBounds.Y + dY * pH));
-                    t.Scale((float)(newBounds.X + dX * pW), (float)(newBounds.Y + dY * pH));
-                    shapes[i].SetPosition(new Point((int)(newBounds.X + dX * pW), (int)(newBounds.Y + dY * pH)));
-                    shapes[i].SetSize(new Size((int)(startBounds[i].Width * pW), (int)(startBounds[i].Height * pH)));
-                }
-            }
-        }
-
-        public void TransformPosition(Point n)
-        {
-            if (startBounds.Count != shapes.Count)
-                StartTransform();
-            for (int i = 0; i < startBounds.Count; i++)
-            {
-                shapes[i].SetPosition(new Point(startBounds[i].X + n.X, startBounds[i].Y + n.Y));
-            }
-        }
-
-        public void TransformSize(Size n)
-        {
-            if (startBounds.Count != shapes.Count)
-                StartTransform();
-            for (int i = 0; i < startBounds.Count; i++)
-            {
-                shapes[i].SetSize(startBounds[i].Size + n);
+                var rBounds = GetBounds(offset, scale).WithoutNegative();
+                return p.X >= rBounds.X && p.Y >= rBounds.Y &&
+                        p.X <= rBounds.X + rBounds.Width && p.Y <= rBounds.Y + rBounds.Height;
             }
         }
 

@@ -24,13 +24,25 @@ namespace DrawPrimitives.Shapes
         public override void DrawStroke(Graphics g)
         {
             if (Pen != null)
-                g.DrawRectangle(Pen, bounds);
+                g.DrawRectangle(Pen, bounds.WithoutNegative());
         }
 
         public override void DrawFill(Graphics g)
         {
             if (Brush != null)
                 g.FillRectangle(Brush, bounds);
+        }
+
+        public override void DrawStroke(Graphics g, Point offset, SizeF scale)
+        {
+            if (Pen != null)
+                g.DrawRectangle(Pen, GetBounds(offset, scale).WithoutNegative());
+        }
+
+        public override void DrawFill(Graphics g, Point offset, SizeF scale)
+        {
+            if (Brush != null)
+                g.FillRectangle(Brush, GetBounds(offset, scale));
         }
     }
 }

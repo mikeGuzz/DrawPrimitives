@@ -13,11 +13,17 @@ namespace DrawPrimitives
 {
     public class Canvas
     {
+        public int OffsetX { get; set; }
+        public int OffsetY { get; set; }
+        public double Zoom { get; set; } = 1d;
         public Size Size { get; set; }
+
+        public Point Offset => new Point(OffsetX, OffsetY);
+        public SizeF SZoom => new SizeF((float)Zoom, (float)Zoom);
+
         [XmlIgnore]
         [JsonIgnore]
-        public Color BackColor { get; set; }
-
+        public Color BackColor { get; set; } = Color.White;
         [JsonPropertyName(name: "Color")]
         [XmlElement(ElementName = "Color")]
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
@@ -26,8 +32,6 @@ namespace DrawPrimitives
             get => BackColor.ToArgb();
             set => BackColor = Color.FromArgb(value);
         }
-
-        public Canvas() { }
         
         public Canvas(Size size)
         {
@@ -38,6 +42,16 @@ namespace DrawPrimitives
         {
             Size = size;
             BackColor = color;
+        }
+
+        public Rectangle GetFileBounds(Rectangle clientBounds, bool includeZoom, bool includeOffset)
+        {
+            var zoom = includeZoom ? Zoom : 1d;
+            var w = (int)(Size.Width * zoom);
+            var h = (int)(Size.Height * zoom);
+            var r = new Rectangle(clientBounds.X + (includeOffset ? OffsetX : 0),
+                clientBounds.Y + (includeOffset ? OffsetY : 0), w, h);
+            return r;
         }
 
         public override bool Equals(object? obj)
