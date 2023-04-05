@@ -180,12 +180,7 @@ namespace DrawPrimitives.Shapes
         {
             if (!UseText)
                 return;
-            var tmpSmoothingMode = g.SmoothingMode;
-            g.SmoothingMode = SmoothingMode;
-
             g.DrawString(TextFormat.Text, TextFormat.Font, new SolidBrush(TextFormat.Color), rect, TextFormat.Format);
-
-            g.SmoothingMode = tmpSmoothingMode;
         }
 
         public abstract Rectangle GetBounds();
