@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DrawPrimitives.My;
+using System;
 using System.Collections.Generic;
 using System.Drawing.Drawing2D;
 using System.Linq;
@@ -9,44 +10,41 @@ using System.Xml.Serialization;
 
 namespace DrawPrimitives.Shapes
 {
-    public abstract class EllipseShape : Shape
+    public class EllipseShape : RectangleBasedShape
     {
-        //public EllipseShape() : base() { }
+        public EllipseShape() : base() { }
 
-        //public EllipseShape(EllipseShape ob) : base(ob) { }
+        public EllipseShape(Rectangle bounds) : base(bounds) { }
 
-        //public EllipseShape(Rectangle bounds) : base()
-        //{
-        //    Bounds = bounds;
-        //    Brush = DefaultBrush;
-        //    Pen = DefaultPen;
-        //}
+        public EllipseShape(Pen pen, BrushHolder brush) : base(pen, brush) { }
 
-        //public EllipseShape(Pen? pen, Brush? brush) : base()
-        //{
-        //    Pen = pen;
-        //    Brush = brush;
-        //}
+        public EllipseShape(Rectangle bounds, Pen pen, BrushHolder brush) : base(bounds, pen, brush) { }
 
-        //public EllipseShape(Rectangle bounds, Pen? pen, Brush? brush) : base()
-        //{
-        //    Bounds = bounds;
-        //    Pen = pen;
-        //    Brush = brush;
-        //}
+        protected override void Draw(Graphics g, Rectangle rect)
+        {
+            if (rect.IsEmpty)
+                return;
+            if (UseBrush)
+            {
+                g.FillEllipse(BrushHolder.GetBrush(rect), rect);
+            }
+            DrawString(g, rect);
+            if (UsePen)
+            {
+                g.DrawEllipse(Pen, rect);
+            }
+        }
 
-        //public override void DrawStroke(Graphics g)
-        //{
-        //    base.DrawStroke(g);
-        //    if(Pen != null)
-        //        g.DrawEllipse(Pen, Bounds);
-        //}
-
-        //public override void DrawFill(Graphics g)
-        //{
-        //    base.DrawFill(g);
-        //    if(Brush != null)
-        //        g.FillEllipse(Brush, Bounds);
-        //}
+        public override object Clone()
+        {
+            var tmp = new EllipseShape(bounds, (Pen)Pen.Clone(), (BrushHolder)BrushHolder.Clone());
+            tmp.TextFormat = (TextFormat)TextFormat.Clone();
+            tmp.UseBrush = UseBrush;
+            tmp.UsePen = UsePen;
+            tmp.UseText = UseText;
+            tmp.FlipX = FlipX;
+            tmp.FlipY = FlipY;
+            return tmp;
+        }
     }
 }

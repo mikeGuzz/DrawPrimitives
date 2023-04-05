@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DrawPrimitives.My;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,10 +10,11 @@ namespace DrawPrimitives.Helpers
 {
     [XmlInclude(typeof(SolidBrushSerializeHelper))]
     [XmlInclude(typeof(HatchBrushSerializeHelper))]
+    [XmlInclude(typeof(TextureBrushSerializeHelper))]
     public abstract class BrushSerializeHelper
     {
-        public BrushSerializeHelper() { }
+        protected BrushSerializeHelper() { }
 
-        public abstract Brush ToBrush();
+        public abstract BrushHolder GetBrushHolder();
     }
 }

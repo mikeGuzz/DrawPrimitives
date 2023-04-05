@@ -8,23 +8,17 @@ namespace DrawPrimitives.Shapes
 {
     public interface IDrawable
     {
-        public void DrawStroke(Graphics g);
-        public void DrawFill(Graphics g);
-        public void DrawStroke(Graphics g, Point offset, SizeF scale);
-        public void DrawFill(Graphics g, Point offset, SizeF scale);
+        public void Draw(Graphics g);
+        public void Draw(Graphics g, SizeF scale);
+
         public Rectangle GetBounds();
-        public Rectangle GetBounds(Point offset, SizeF scale);
-        //{
-        //    var r = GetBounds();
-        //    return new Rectangle((int)(r.X * canv.Zoom) + canv.OffsetX, (int)(r.Y * canv.Zoom) + canv.OffsetY, (int)(r.Width * canv.Zoom), (int)(r.Height * canv.Zoom));
-        //}
-        public void SetPosition(Point p);
-        public void SetPosition(int x, int y);
-        public void SetSize(Size s);
-        public void SetSize(int w, int h);
-        public void Bound(Rectangle r);
-        public void Bound(int x, int y, int w, int h);
+        public Rectangle GetBounds(SizeF scale);
+
         public bool IsHit(Point p);
-        public bool IsHit(Point p, Point offset, SizeF scale);
+        public bool IsHit(Point p, SizeF scale);
+
+        public void SetPosition(Point p);
+        public void SetSize(Size s);
+        public void Bound(Rectangle r);
     }
 }

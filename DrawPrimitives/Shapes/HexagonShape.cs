@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DrawPrimitives.My;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,57 +7,39 @@ using System.Threading.Tasks;
 
 namespace DrawPrimitives.Shapes
 {
-    public abstract class HexagonShape : PolygonShape
+    public class HexagonShape : BoundedPolygonShapeBase
     {
-        //public override Point[] GetPoints()
-        //{
-        //    return new Point[]
-        //    {
-        //        new Point(Bounds.Left + (Bounds.Width / 2), Bounds.Top),
-        //        new Point(Bounds.Left, (int)(Bounds.Top + (Bounds.Height * 0.25))),
-        //        new Point(Bounds.Left, (int)(Bounds.Top + (Bounds.Height * 0.75))),
-        //        new Point(Bounds.Left + (Bounds.Width / 2), Bounds.Top + Bounds.Height),
-        //        new Point(Bounds.Left + Bounds.Width, (int)(Bounds.Top +(Bounds.Height * 0.75))),
-        //        new Point(Bounds.Left + Bounds.Width, (int)(Bounds.Top +(Bounds.Height * 0.25))),
-        //    };
-        //}
+        public HexagonShape() : base() { }
 
-        //public HexagonShape() : base() { }
+        public HexagonShape(Rectangle bounds) : base(bounds) { }
 
-        //public HexagonShape(HexagonShape ob) : base(ob) { }
+        public HexagonShape(Pen pen, BrushHolder brush) : base(pen, brush) { }
 
-        //public HexagonShape(Rectangle bounds) : base()
-        //{
-        //    Bounds = bounds;
-        //    Brush = DefaultBrush;
-        //    Pen = DefaultPen;
-        //}
+        public HexagonShape(Rectangle bounds, Pen pen, BrushHolder brush) : base(bounds, pen, brush) { }
 
-        //public HexagonShape(Pen? pen, Brush? brush) : base()
-        //{
-        //    Pen = pen;
-        //    Brush = brush;
-        //}
+        public override Point[] GetPoints()
+        {
+            return new Point[]
+            {
+                new Point(Bounds.Left + (Bounds.Width / 2), Bounds.Top),
+                new Point(Bounds.Left, (int)(Bounds.Top + (Bounds.Height * 0.25))),
+                new Point(Bounds.Left, (int)(Bounds.Top + (Bounds.Height * 0.75))),
+                new Point(Bounds.Left + (Bounds.Width / 2), Bounds.Top + Bounds.Height),
+                new Point(Bounds.Left + Bounds.Width, (int)(Bounds.Top +(Bounds.Height * 0.75))),
+                new Point(Bounds.Left + Bounds.Width, (int)(Bounds.Top +(Bounds.Height * 0.25))),
+            };
+        }
 
-        //public HexagonShape(Rectangle bounds, Pen? pen, Brush? brush) : base()
-        //{
-        //    Bounds = bounds;
-        //    Pen = pen;
-        //    Brush = brush;
-        //}
-
-        //public override void DrawStroke(Graphics g)
-        //{
-        //    base.DrawStroke(g);
-        //    if (Pen != null)
-        //        g.DrawPolygon(Pen, GetPoints());
-        //}
-
-        //public override void DrawFill(Graphics g)
-        //{
-        //    base.DrawFill(g);
-        //    if (Brush != null)
-        //        g.FillPolygon(Brush, GetPoints());
-        //}
+        public override object Clone()
+        {
+            var tmp = new HexagonShape(bounds, (Pen)Pen.Clone(), (BrushHolder)BrushHolder.Clone());
+            tmp.TextFormat = (TextFormat)TextFormat.Clone();
+            tmp.UseBrush = UseBrush;
+            tmp.UsePen = UsePen;
+            tmp.UseText = UseText;
+            tmp.FlipX = FlipX;
+            tmp.FlipY = FlipY;
+            return tmp;
+        }
     }
 }

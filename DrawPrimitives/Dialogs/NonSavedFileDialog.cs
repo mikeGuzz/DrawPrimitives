@@ -8,8 +8,9 @@ using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DrawPrimitives.My;
 
-namespace DrawPrimitives
+namespace DrawPrimitives.Dialogs
 {
     public partial class NonSavedFileDialog : Form
     {

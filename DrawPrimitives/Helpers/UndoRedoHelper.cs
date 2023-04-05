@@ -8,47 +8,52 @@ namespace DrawPrimitives.Helpers
 {
     public class UndoRedoHelper<T> where T : ICloneable
     {
-        private Stack<T> undoStack, redoStack;
+        private Stack<T> undo = new Stack<T>();
+        private Stack<T> redo = new Stack<T>();
 
-        public UndoRedoHelper()
-        {
-            redoStack = new Stack<T>();
-            undoStack = new Stack<T>();
-        }
+        public int Limit { get; set; } = 1000;
 
-        public void AddToUndoStack(T value)
+        public UndoRedoHelper() { }
+
+        public void AddItem(T value)
         {
-            undoStack.Push((T)value.Clone());
-            if (redoStack.Count > 0)
-                redoStack.Clear();
+            if (redo.Count != 0)
+                redo.Clear();
+            if(undo.Count >= Limit)
+                undo.Clear();
+            undo.Push(value);
         }
 
         public bool CanUndo()
         {
-            return undoStack.Count > 0;
+            return undo.Any();
         }
 
         public bool CanRedo()
         {
-            return redoStack.Count > 0;
+            return redo.Any();
         }
 
-        public T GetFromUndoStack()
+        public T Undo(T value)
         {
-            redoStack.Push(undoStack.Peek());
-            return undoStack.Pop();
+            if (redo.Count >= Limit)
+                redo.Clear();
+            redo.Push(value);
+            return undo.Pop();
         }
 
-        public T GetFromRedoStack()
+        public T Redo(T value)
         {
-            undoStack.Push(redoStack.Peek());
-            return redoStack.Pop();
+            if (undo.Count >= Limit)
+                undo.Clear();
+            undo.Push(value);
+            return redo.Pop();
         }
 
         public void Clear()
         {
-            redoStack.Clear();
-            undoStack.Clear();
+            undo.Clear();
+            redo.Clear();
         }
     }
 }

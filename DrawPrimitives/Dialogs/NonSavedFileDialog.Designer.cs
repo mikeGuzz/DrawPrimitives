@@ -1,4 +1,4 @@
-﻿namespace DrawPrimitives
+﻿namespace DrawPrimitives.Dialogs
 {
     partial class NonSavedFileDialog
     {
@@ -77,8 +77,10 @@
             // 
             // NonSavedFileDialog
             // 
+            this.AcceptButton = this.save_button;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.CancelButton = this.cancel_button;
             this.ClientSize = new System.Drawing.Size(357, 126);
             this.Controls.Add(this.save_button);
             this.Controls.Add(this.dontSave_button);

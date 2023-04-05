@@ -1,6 +1,6 @@
-﻿namespace DrawPrimitives
+﻿namespace DrawPrimitives.Dialogs.Editors
 {
-    partial class BrushDialog
+    partial class BrushPropertiesEditor
     {
         /// <summary>
         /// Required designer variable.
@@ -212,7 +212,7 @@
             // 
             // hatchColor_pictureBox
             // 
-            this.hatchColor_pictureBox.BackColor = System.Drawing.Color.Black;
+            this.hatchColor_pictureBox.BackColor = System.Drawing.Color.White;
             this.hatchColor_pictureBox.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.hatchColor_pictureBox.Location = new System.Drawing.Point(66, 22);
             this.hatchColor_pictureBox.Name = "hatchColor_pictureBox";
@@ -291,10 +291,6 @@
             // 
             this.type_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.type_comboBox.FormattingEnabled = true;
-            this.type_comboBox.Items.AddRange(new object[] {
-            "Solid Color",
-            "Hatch",
-            "Texture"});
             this.type_comboBox.Location = new System.Drawing.Point(78, 399);
             this.type_comboBox.Name = "type_comboBox";
             this.type_comboBox.Size = new System.Drawing.Size(168, 23);
@@ -374,10 +370,12 @@
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
-            // BrushSetupDialog
+            // BrushPropertiesEditor
             // 
+            this.AcceptButton = this.ok_button;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.CancelButton = this.cancel_button;
             this.ClientSize = new System.Drawing.Size(258, 521);
             this.Controls.Add(this.texture_groupBox);
             this.Controls.Add(this.label2);
@@ -391,9 +389,9 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "BrushSetupDialog";
+            this.Name = "BrushPropertiesEditor";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "BrushSetupDialog";
+            this.Text = "Fill Editor";
             this.mainColor_groupBox.ResumeLayout(false);
             this.mainColor_groupBox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.mainColorOpacity_numericUpDown)).EndInit();

@@ -4,6 +4,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DrawPrimitives.My;
 
 namespace DrawPrimitives.Helpers
 {
@@ -15,16 +16,17 @@ namespace DrawPrimitives.Helpers
 
         public HatchBrushSerializeHelper() : base() { }
 
-        public HatchBrushSerializeHelper(HatchBrush brush) : base()
+        public HatchBrushSerializeHelper(HatchBrushHolder holder) : base()
         {
+            var brush = (HatchBrush)holder.Brush;
             HatchStyle = brush.HatchStyle;
             ArgBackColor = brush.BackgroundColor.ToArgb();
             ArgForeColor = brush.ForegroundColor.ToArgb();
         }
 
-        public override Brush ToBrush()
+        public override BrushHolder GetBrushHolder()
         {
-            return new HatchBrush(HatchStyle, Color.FromArgb(ArgForeColor), Color.FromArgb(ArgBackColor));
+            return new HatchBrushHolder(new HatchBrush(HatchStyle, Color.FromArgb(ArgForeColor), Color.FromArgb(ArgBackColor)));
         }
     }
 }

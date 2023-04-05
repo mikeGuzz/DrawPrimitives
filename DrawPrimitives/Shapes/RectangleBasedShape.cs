@@ -1,10 +1,14 @@
 ﻿using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
+using DrawPrimitives.My;
 
 namespace DrawPrimitives.Shapes
 {
@@ -12,23 +16,24 @@ namespace DrawPrimitives.Shapes
     {
         protected Rectangle bounds;
 
+        public Rectangle Bounds
+        {
+            get => bounds;
+            set => bounds = value;
+        }
+
         public RectangleBasedShape() : base() { }
 
         public RectangleBasedShape(Rectangle bounds) : base()
         {
-            this.bounds = bounds;
+            Bound(bounds);
         }
 
-        public RectangleBasedShape(Pen? pen, Brush? brush) : base(pen, brush) { }
+        public RectangleBasedShape(Pen pen, BrushHolder brush) : base(pen, brush) { }
 
-        public RectangleBasedShape(Rectangle bounds, Pen? pen, Brush? brush) : base(pen, brush)
+        public RectangleBasedShape(Rectangle bounds, Pen pen, BrushHolder brush) : base(pen, brush)
         {
-            this.bounds = bounds;
-        }
-
-        public RectangleBasedShape(RectangleBasedShape ob) : base(ob)
-        {
-            bounds = ob.bounds;
+            Bound(bounds);
         }
 
         public override Rectangle GetBounds()
@@ -36,14 +41,10 @@ namespace DrawPrimitives.Shapes
             return bounds;
         }
 
-        public override void Bound(int x, int y, int w, int h)
-        {
-            Bound(new Rectangle(x, y, w, h));
-        }
-
         public override void Bound(Rectangle r)
         {
-            bounds = r;
+            SetPosition(r.Location);
+            SetSize(r.Size);
         }
 
         public override void SetPosition(Point p)
@@ -51,19 +52,10 @@ namespace DrawPrimitives.Shapes
             bounds.Location = p;
         }
 
-        public override void SetPosition(int x, int y)
-        {
-            SetPosition(new Point(x, y));
-        }
-
         public override void SetSize(Size s)
         {
-            bounds.Size = s;
-        }
-
-        public override void SetSize(int w, int h)
-        {
-            SetSize(new Size(w, h));
+            bounds.Size = new Size(Math.Abs(s.Width) < MinimumSize.Width ? MinimumSize.Width : s.Width,
+                Math.Abs(s.Height) < MinimumSize.Height ? MinimumSize.Height : s.Height);
         }
     }
 }

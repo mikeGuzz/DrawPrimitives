@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DrawPrimitives.My;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,14 +13,14 @@ namespace DrawPrimitives.Helpers
 
         public SolidBrushSerializeHelper() : base() { }
 
-        public SolidBrushSerializeHelper(SolidBrush brush) : base()
+        public SolidBrushSerializeHelper(SolidBrushHolder holder) : base()
         {
-            ArgColor = brush.Color.ToArgb();
+            ArgColor = ((SolidBrush)holder.Brush).Color.ToArgb();
         }
 
-        public override Brush ToBrush()
+        public override BrushHolder GetBrushHolder()
         {
-            return new SolidBrush(Color.FromArgb(ArgColor));
+            return new SolidBrushHolder(new SolidBrush(Color.FromArgb(ArgColor)));
         }
     }
 }

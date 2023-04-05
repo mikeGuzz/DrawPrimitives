@@ -1,9 +1,11 @@
-﻿using System;
+﻿using DrawPrimitives.My;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -13,57 +15,52 @@ namespace DrawPrimitives.Helpers
 {
     public sealed class TextureBrushSerializeHelper : BrushSerializeHelper
     {
-        [JsonIgnore]
-        [XmlIgnore]
-        public Bitmap? Image { get; set; }
+        public string? ImagePath { get; set; }
         public WrapMode WrapMode { get; set; }
         public Matrix? Transform { get; set; }
-
-        [JsonPropertyName(name: "Image")]
-        [XmlElement(ElementName = "Image")]
-        [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
-        public byte[] ImageSerialized
-        {
-            get//serialize
-            {
-                if (Image == null) return new byte[0];
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    Image.Save(ms, ImageFormat.Bmp);
-                    return ms.ToArray();
-                }
-            }
-            set//deserialize
-            {
-                if (value == null)
-                    Image = null;
-                else
-                {
-                    using (MemoryStream ms = new MemoryStream(value))
-                    {
-                        Image = new Bitmap(ms);
-                    }
-                }
-            }
-        }
+        public bool Stretch { get; set; }
+        public Size Offset { get; set; }
 
         public TextureBrushSerializeHelper() : base() { }
 
-        public TextureBrushSerializeHelper(TextureBrush brush) : base()
+        public TextureBrushSerializeHelper(TextureBrushHolder holder) : base()
         {
-            Image = new Bitmap(brush.Image);
+            ImagePath = holder.Path;
+            var brush = holder.Brush;
             WrapMode = brush.WrapMode;
             Transform = brush.Transform;
+            Stretch = holder.Stretch;
+            Offset = holder.Offset;
         }
 
-        public override Brush ToBrush()
+        public override BrushHolder GetBrushHolder()
         {
-            if (Image == null)
-                throw new InvalidOperationException(nameof(Image));
-            var b = new TextureBrush(Image, WrapMode);
+            if (!File.Exists(ImagePath))
+            {
+                var bounds = new Rectangle(0, 0, 256, 256);
+                using(var map = new Bitmap(bounds.Width, bounds.Height))
+                {
+                    using(var g = Graphics.FromImage(map))
+                    {
+                        var format = new StringFormat()
+                        {
+                            Alignment = StringAlignment.Center,
+                            LineAlignment = StringAlignment.Center,
+                        };
+                        g.DrawString("file was not found.", new Font("Consolas", 24), Brushes.DarkRed, bounds, format);
+                        var ob = new TextureBrushHolder(new TextureBrush(map), ImagePath != null ? ImagePath : string.Empty);
+                        ob.Stretch = true;
+                        return ob;
+                    }
+                }
+            }
+            var b = new TextureBrush(new Bitmap(ImagePath), WrapMode);
             if (Transform != null)
                 b.Transform = Transform;
-            return b;
+            var holder = new TextureBrushHolder(b, ImagePath);
+            holder.Stretch = Stretch;
+            holder.Offset = Offset;
+            return holder;
         }
     }
 }

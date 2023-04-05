@@ -1,6 +1,6 @@
-﻿namespace DrawPrimitives.Dialog.SetupDialogs
+﻿namespace DrawPrimitives.Dialogs.Editors
 {
-    partial class PenDialog
+    partial class PenPropertiesEditor
     {
         /// <summary>
         /// Required designer variable.
@@ -29,6 +29,8 @@
         private void InitializeComponent()
         {
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.aligment_comboBox = new System.Windows.Forms.ComboBox();
+            this.label10 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.opacity_numericUpDown = new System.Windows.Forms.NumericUpDown();
             this.label2 = new System.Windows.Forms.Label();
@@ -37,33 +39,19 @@
             this.colorPrev_pictureBox = new System.Windows.Forms.PictureBox();
             this.label1 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.spaceLength_numericUpDown = new System.Windows.Forms.NumericUpDown();
-            this.label9 = new System.Windows.Forms.Label();
-            this.dashLength_numericUpDown = new System.Windows.Forms.NumericUpDown();
-            this.label5 = new System.Windows.Forms.Label();
             this.dashStyle_comboBox = new System.Windows.Forms.ComboBox();
             this.label = new System.Windows.Forms.Label();
             this.dashCap_comboBox = new System.Windows.Forms.ComboBox();
             this.label3 = new System.Windows.Forms.Label();
-            this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.endCap_comboBox = new System.Windows.Forms.ComboBox();
-            this.label7 = new System.Windows.Forms.Label();
-            this.startCap_comboBox = new System.Windows.Forms.ComboBox();
-            this.label6 = new System.Windows.Forms.Label();
             this.preview_pictureBox = new System.Windows.Forms.PictureBox();
             this.label8 = new System.Windows.Forms.Label();
             this.ok_button = new System.Windows.Forms.Button();
             this.cancel_button = new System.Windows.Forms.Button();
-            this.label10 = new System.Windows.Forms.Label();
-            this.aligment_comboBox = new System.Windows.Forms.ComboBox();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.opacity_numericUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.width_numericUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.colorPrev_pictureBox)).BeginInit();
             this.groupBox2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.spaceLength_numericUpDown)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dashLength_numericUpDown)).BeginInit();
-            this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.preview_pictureBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -84,6 +72,24 @@
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Main";
+            // 
+            // aligment_comboBox
+            // 
+            this.aligment_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.aligment_comboBox.FormattingEnabled = true;
+            this.aligment_comboBox.Location = new System.Drawing.Point(74, 109);
+            this.aligment_comboBox.Name = "aligment_comboBox";
+            this.aligment_comboBox.Size = new System.Drawing.Size(141, 23);
+            this.aligment_comboBox.TabIndex = 13;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(6, 112);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(62, 15);
+            this.label10.TabIndex = 7;
+            this.label10.Text = "Aligment: ";
             // 
             // label4
             // 
@@ -181,86 +187,16 @@
             // 
             // groupBox2
             // 
-            this.groupBox2.Controls.Add(this.spaceLength_numericUpDown);
-            this.groupBox2.Controls.Add(this.label9);
-            this.groupBox2.Controls.Add(this.dashLength_numericUpDown);
-            this.groupBox2.Controls.Add(this.label5);
             this.groupBox2.Controls.Add(this.dashStyle_comboBox);
             this.groupBox2.Controls.Add(this.label);
             this.groupBox2.Controls.Add(this.dashCap_comboBox);
             this.groupBox2.Controls.Add(this.label3);
             this.groupBox2.Location = new System.Drawing.Point(12, 156);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(221, 139);
+            this.groupBox2.Size = new System.Drawing.Size(221, 82);
             this.groupBox2.TabIndex = 1;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Dash";
-            // 
-            // spaceLength_numericUpDown
-            // 
-            this.spaceLength_numericUpDown.DecimalPlaces = 2;
-            this.spaceLength_numericUpDown.Location = new System.Drawing.Point(90, 109);
-            this.spaceLength_numericUpDown.Maximum = new decimal(new int[] {
-            10,
-            0,
-            0,
-            0});
-            this.spaceLength_numericUpDown.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
-            this.spaceLength_numericUpDown.Name = "spaceLength_numericUpDown";
-            this.spaceLength_numericUpDown.Size = new System.Drawing.Size(125, 23);
-            this.spaceLength_numericUpDown.TabIndex = 12;
-            this.spaceLength_numericUpDown.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.spaceLength_numericUpDown.ValueChanged += new System.EventHandler(this.UpdatePreview);
-            // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(6, 111);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(78, 15);
-            this.label9.TabIndex = 11;
-            this.label9.Text = "Space length:";
-            // 
-            // dashLength_numericUpDown
-            // 
-            this.dashLength_numericUpDown.DecimalPlaces = 2;
-            this.dashLength_numericUpDown.Location = new System.Drawing.Point(90, 80);
-            this.dashLength_numericUpDown.Maximum = new decimal(new int[] {
-            10,
-            0,
-            0,
-            0});
-            this.dashLength_numericUpDown.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
-            this.dashLength_numericUpDown.Name = "dashLength_numericUpDown";
-            this.dashLength_numericUpDown.Size = new System.Drawing.Size(125, 23);
-            this.dashLength_numericUpDown.TabIndex = 10;
-            this.dashLength_numericUpDown.Value = new decimal(new int[] {
-            3,
-            0,
-            0,
-            0});
-            this.dashLength_numericUpDown.ValueChanged += new System.EventHandler(this.UpdatePreview);
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(6, 82);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(73, 15);
-            this.label5.TabIndex = 9;
-            this.label5.Text = "Dash length:";
             // 
             // dashStyle_comboBox
             // 
@@ -270,7 +206,7 @@
             this.dashStyle_comboBox.Name = "dashStyle_comboBox";
             this.dashStyle_comboBox.Size = new System.Drawing.Size(125, 23);
             this.dashStyle_comboBox.TabIndex = 7;
-            this.dashStyle_comboBox.SelectedIndexChanged += new System.EventHandler(this.dashStyle_comboBox_SelectedIndexChanged);
+            this.dashStyle_comboBox.SelectedIndexChanged += new System.EventHandler(this.UpdatePreview);
             // 
             // label
             // 
@@ -300,61 +236,10 @@
             this.label3.TabIndex = 0;
             this.label3.Text = "Dash cap:";
             // 
-            // groupBox3
-            // 
-            this.groupBox3.Controls.Add(this.endCap_comboBox);
-            this.groupBox3.Controls.Add(this.label7);
-            this.groupBox3.Controls.Add(this.startCap_comboBox);
-            this.groupBox3.Controls.Add(this.label6);
-            this.groupBox3.Location = new System.Drawing.Point(12, 301);
-            this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(221, 83);
-            this.groupBox3.TabIndex = 1;
-            this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "Cap";
-            // 
-            // endCap_comboBox
-            // 
-            this.endCap_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.endCap_comboBox.FormattingEnabled = true;
-            this.endCap_comboBox.Location = new System.Drawing.Point(68, 51);
-            this.endCap_comboBox.Name = "endCap_comboBox";
-            this.endCap_comboBox.Size = new System.Drawing.Size(147, 23);
-            this.endCap_comboBox.TabIndex = 14;
-            this.endCap_comboBox.SelectedIndexChanged += new System.EventHandler(this.UpdatePreview);
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(6, 54);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(52, 15);
-            this.label7.TabIndex = 13;
-            this.label7.Text = "End cap:";
-            // 
-            // startCap_comboBox
-            // 
-            this.startCap_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.startCap_comboBox.FormattingEnabled = true;
-            this.startCap_comboBox.Location = new System.Drawing.Point(68, 22);
-            this.startCap_comboBox.Name = "startCap_comboBox";
-            this.startCap_comboBox.Size = new System.Drawing.Size(147, 23);
-            this.startCap_comboBox.TabIndex = 12;
-            this.startCap_comboBox.SelectedIndexChanged += new System.EventHandler(this.UpdatePreview);
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(6, 25);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(56, 15);
-            this.label6.TabIndex = 11;
-            this.label6.Text = "Start cap:";
-            // 
             // preview_pictureBox
             // 
             this.preview_pictureBox.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.preview_pictureBox.Location = new System.Drawing.Point(72, 390);
+            this.preview_pictureBox.Location = new System.Drawing.Point(72, 241);
             this.preview_pictureBox.Name = "preview_pictureBox";
             this.preview_pictureBox.Size = new System.Drawing.Size(161, 45);
             this.preview_pictureBox.TabIndex = 5;
@@ -364,7 +249,7 @@
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(12, 390);
+            this.label8.Location = new System.Drawing.Point(12, 241);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(54, 15);
             this.label8.TabIndex = 6;
@@ -372,7 +257,7 @@
             // 
             // ok_button
             // 
-            this.ok_button.Location = new System.Drawing.Point(77, 441);
+            this.ok_button.Location = new System.Drawing.Point(77, 305);
             this.ok_button.Name = "ok_button";
             this.ok_button.Size = new System.Drawing.Size(75, 23);
             this.ok_button.TabIndex = 7;
@@ -382,7 +267,7 @@
             // 
             // cancel_button
             // 
-            this.cancel_button.Location = new System.Drawing.Point(158, 441);
+            this.cancel_button.Location = new System.Drawing.Point(158, 305);
             this.cancel_button.Name = "cancel_button";
             this.cancel_button.Size = new System.Drawing.Size(75, 23);
             this.cancel_button.TabIndex = 8;
@@ -390,42 +275,25 @@
             this.cancel_button.UseVisualStyleBackColor = true;
             this.cancel_button.Click += new System.EventHandler(this.cancel_button_Click);
             // 
-            // label10
+            // PenPropertiesEditor
             // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(6, 112);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(62, 15);
-            this.label10.TabIndex = 7;
-            this.label10.Text = "Aligment: ";
-            // 
-            // aligment_comboBox
-            // 
-            this.aligment_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.aligment_comboBox.FormattingEnabled = true;
-            this.aligment_comboBox.Location = new System.Drawing.Point(74, 109);
-            this.aligment_comboBox.Name = "aligment_comboBox";
-            this.aligment_comboBox.Size = new System.Drawing.Size(141, 23);
-            this.aligment_comboBox.TabIndex = 13;
-            // 
-            // PenSetupDialog
-            // 
+            this.AcceptButton = this.ok_button;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(245, 474);
+            this.CancelButton = this.cancel_button;
+            this.ClientSize = new System.Drawing.Size(243, 344);
             this.Controls.Add(this.cancel_button);
             this.Controls.Add(this.ok_button);
             this.Controls.Add(this.label8);
-            this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.preview_pictureBox);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "PenSetupDialog";
+            this.Name = "PenPropertiesEditor";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Tool setting";
+            this.Text = "Outline Editor";
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.opacity_numericUpDown)).EndInit();
@@ -433,10 +301,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.colorPrev_pictureBox)).EndInit();
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.spaceLength_numericUpDown)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dashLength_numericUpDown)).EndInit();
-            this.groupBox3.ResumeLayout(false);
-            this.groupBox3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.preview_pictureBox)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -452,25 +316,16 @@
         private PictureBox colorPrev_pictureBox;
         private Label label1;
         private GroupBox groupBox2;
-        private GroupBox groupBox3;
         private ComboBox dashStyle_comboBox;
         private Label label;
         private PictureBox preview_pictureBox;
         private ComboBox dashCap_comboBox;
         private Label label3;
-        private NumericUpDown dashLength_numericUpDown;
-        private Label label5;
-        private ComboBox endCap_comboBox;
-        private Label label7;
-        private ComboBox startCap_comboBox;
-        private Label label6;
         private Label label8;
         private Button ok_button;
         private Button cancel_button;
         private NumericUpDown opacity_numericUpDown;
         private Label label4;
-        private NumericUpDown spaceLength_numericUpDown;
-        private Label label9;
         private ComboBox aligment_comboBox;
         private Label label10;
     }
