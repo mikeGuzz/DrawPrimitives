@@ -87,7 +87,6 @@
             this.resetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.mousePos_toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
-            this.bounds_toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.pictureBox = new System.Windows.Forms.PictureBox();
             this.container_panel = new System.Windows.Forms.Panel();
             this.contextMenuStrip1.SuspendLayout();
@@ -111,7 +110,7 @@
             this.bringToFrontToolStripMenuItem,
             this.sendToBackToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(181, 198);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(148, 176);
             this.contextMenuStrip1.Closing += new System.Windows.Forms.ToolStripDropDownClosingEventHandler(this.contextMenuStrip1_Closing);
             this.contextMenuStrip1.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStrip1_Opening);
             // 
@@ -123,7 +122,7 @@
             this.transformToolStripMenuItem,
             this.textToolStripMenuItem});
             this.propertiesToolStripMenuItem.Name = "propertiesToolStripMenuItem";
-            this.propertiesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.propertiesToolStripMenuItem.Size = new System.Drawing.Size(147, 22);
             this.propertiesToolStripMenuItem.Text = "Properties";
             this.propertiesToolStripMenuItem.Click += new System.EventHandler(this.propertiesToolStripMenuItem_Click);
             // 
@@ -158,57 +157,57 @@
             // toolStripSeparator4
             // 
             this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new System.Drawing.Size(177, 6);
+            this.toolStripSeparator4.Size = new System.Drawing.Size(144, 6);
             // 
             // cutToolStripMenuItem
             // 
             this.cutToolStripMenuItem.Name = "cutToolStripMenuItem";
-            this.cutToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.cutToolStripMenuItem.Size = new System.Drawing.Size(147, 22);
             this.cutToolStripMenuItem.Text = "Cut";
             this.cutToolStripMenuItem.Click += new System.EventHandler(this.cutToolStripMenuItem_Click);
             // 
             // copyToolStripMenuItem
             // 
             this.copyToolStripMenuItem.Name = "copyToolStripMenuItem";
-            this.copyToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.copyToolStripMenuItem.Size = new System.Drawing.Size(147, 22);
             this.copyToolStripMenuItem.Text = "Copy";
             this.copyToolStripMenuItem.Click += new System.EventHandler(this.copyToolStripMenuItem_Click);
             // 
             // pasteToolStripMenuItem
             // 
             this.pasteToolStripMenuItem.Name = "pasteToolStripMenuItem";
-            this.pasteToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.pasteToolStripMenuItem.Size = new System.Drawing.Size(147, 22);
             this.pasteToolStripMenuItem.Text = "Paste";
             this.pasteToolStripMenuItem.Click += new System.EventHandler(this.pasteToolStripMenuItem_Click);
             // 
             // toolStripSeparator5
             // 
             this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(177, 6);
+            this.toolStripSeparator5.Size = new System.Drawing.Size(144, 6);
             // 
             // deleteToolStripMenuItem
             // 
             this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
-            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(147, 22);
             this.deleteToolStripMenuItem.Text = "Delete";
             this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
             // toolStripSeparator6
             // 
             this.toolStripSeparator6.Name = "toolStripSeparator6";
-            this.toolStripSeparator6.Size = new System.Drawing.Size(177, 6);
+            this.toolStripSeparator6.Size = new System.Drawing.Size(144, 6);
             // 
             // bringToFrontToolStripMenuItem
             // 
             this.bringToFrontToolStripMenuItem.Name = "bringToFrontToolStripMenuItem";
-            this.bringToFrontToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.bringToFrontToolStripMenuItem.Size = new System.Drawing.Size(147, 22);
             this.bringToFrontToolStripMenuItem.Text = "Bring to Front";
             this.bringToFrontToolStripMenuItem.Click += new System.EventHandler(this.bringToFrontToolStripMenuItem_Click);
             // 
             // sendToBackToolStripMenuItem
             // 
             this.sendToBackToolStripMenuItem.Name = "sendToBackToolStripMenuItem";
-            this.sendToBackToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.sendToBackToolStripMenuItem.Size = new System.Drawing.Size(147, 22);
             this.sendToBackToolStripMenuItem.Text = "Send to Back";
             this.sendToBackToolStripMenuItem.Click += new System.EventHandler(this.sendToBackToolStripMenuItem_Click);
             // 
@@ -558,8 +557,7 @@
             // statusStrip1
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mousePos_toolStripStatusLabel,
-            this.bounds_toolStripStatusLabel});
+            this.mousePos_toolStripStatusLabel});
             this.statusStrip1.Location = new System.Drawing.Point(0, 415);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional;
@@ -576,15 +574,6 @@
             this.mousePos_toolStripStatusLabel.Text = "-, -px";
             this.mousePos_toolStripStatusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.mousePos_toolStripStatusLabel.ToolTipText = "Local nouse position";
-            // 
-            // bounds_toolStripStatusLabel
-            // 
-            this.bounds_toolStripStatusLabel.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
-            this.bounds_toolStripStatusLabel.Name = "bounds_toolStripStatusLabel";
-            this.bounds_toolStripStatusLabel.Padding = new System.Windows.Forms.Padding(0, 0, 25, 0);
-            this.bounds_toolStripStatusLabel.Size = new System.Drawing.Size(71, 19);
-            this.bounds_toolStripStatusLabel.Text = "- x -px";
-            this.bounds_toolStripStatusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pictureBox
             // 
@@ -682,7 +671,6 @@
         private ToolStripMenuItem saveToolStripMenuItem;
         private ToolStripMenuItem saveAsToolStripMenuItem;
         private ToolStripStatusLabel mousePos_toolStripStatusLabel;
-        private ToolStripStatusLabel bounds_toolStripStatusLabel;
         private ToolStripMenuItem imageToolStripMenuItem;
         private ToolStripMenuItem canvasSettingToolStripMenuItem;
         private ToolStripMenuItem undoToolStripMenuItem;

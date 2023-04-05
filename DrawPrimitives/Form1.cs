@@ -897,10 +897,8 @@ namespace DrawPrimitives
             SendToBackItems();
         }
 
-        private bool TryXmlSerializeDataToFile(string? path)
+        private bool TryXmlSerializeDataToFile(string path)
         {
-            if (!File.Exists(path))
-                return false;
             XmlSerializer serializer = new XmlSerializer(typeof(MyOrder));
             try
             {
