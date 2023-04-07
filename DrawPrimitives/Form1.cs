@@ -1249,6 +1249,18 @@ namespace DrawPrimitives
             selectAllToolStripMenuItem.Enabled = shapes.Any();
         }
 
+        private void editToolStripMenuItem_DropDownClosed(object sender, EventArgs e)
+        {
+            undoToolStripMenuItem.Enabled = true;
+            redoToolStripMenuItem.Enabled = true;
+            propertiesToolStripMenuItem1.Enabled = true;
+            cutToolStripMenuItem1.Enabled = true;
+            copyToolStripMenuItem1.Enabled = true;
+            pasteToolStripMenuItem1.Enabled = true;
+            deleteToolStripMenuItem1.Enabled = true;
+            selectAllToolStripMenuItem.Enabled = true;
+        }
+
         private void zoomInToolStripMenuItem_Click(object sender, EventArgs e)
         {
             float tmp = zoom * 1.15f;
